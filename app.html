@@ -1,19 +1,13 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <!-- PWA必須メタタグ -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="減薬アプリ">
-    <meta name="theme-color" content="#007AFF">
-    <!-- PWAマニフェスト (インラインで埋め込む) -->
-    <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22%E6%B8%9B%E8%96%AC%E3%83%9E%E3%83%8D%E3%83%BC%E3%82%B8%E3%83%A3%E3%83%BC%22%2C%22short_name%22%3A%22%E6%B8%9B%E8%96%AC%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F2F2F7%22%2C%22theme_color%22%3A%22%23007AFF%22%2C%22start_url%22%3A%22.%22%7D">
-    <!-- アイコン（SVGをData URIでインライン化） -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23007AFF'/%3E%3Ccircle cx='90' cy='90' r='60' fill='none' stroke='white' stroke-width='10' stroke-dasharray='314' stroke-dashoffset='100'/%3E%3Ctext x='90' y='100' font-family='Helvetica' font-size='48' font-weight='bold' fill='white' text-anchor='middle'%3E%E6%B8%9B%3C/text%3E%3C/svg%3E">
+    <meta name="apple-mobile-web-app-title" content="減薬マネージャー">
     <title>減薬マネージャー</title>
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%23007AFF'/%3E%3Cpath d='M60 60 L100 100' stroke='white' stroke-width='40' stroke-linecap='round' transform='rotate(45 80 80)'/%3E%3Ccircle cx='120' cy='120' r='25' fill='white'/%3E%3Cpath d='M50 50 L110 110' stroke='%23007AFF' stroke-width='2' transform='rotate(45 80 80)' opacity='0.2'/%3E%3C/svg%3E">
     <style>
         :root {
             --bg-color: #F2F2F7;
@@ -26,764 +20,608 @@
             --color-red: #FF3B30;
             --tab-bar-height: 83px;
             --action-bar-height: 95px;
-            /* セーフエリア対応 */
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
 
-```
-    * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "SF Pro Text", sans-serif;
+            background-color: var(--bg-color);
+            margin: 0; padding: 0;
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: var(--tab-bar-height);
+            color: var(--text-primary);
+            -webkit-user-select: none; user-select: none;
+            height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+        }
 
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, "SF Pro Rounded", "SF Pro Text", sans-serif;
-        background-color: var(--bg-color);
-        margin: 0; padding: 0;
-        padding-top: max(20px, var(--safe-top));
-        padding-bottom: var(--tab-bar-height);
-        color: var(--text-primary);
-        -webkit-user-select: none; user-select: none;
-        height: 100dvh; /* dynamic viewport height for iPhone */
-        overflow: hidden;
-        display: flex; flex-direction: column;
-    }
+        /* --- 画面管理 --- */
+        .screen {
+            display: none; flex: 1; flex-direction: column;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+            padding: 20px;
+            padding-bottom: calc(var(--action-bar-height) + 40px);
+        }
+        .screen.active { display: flex; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* --- 画面管理 --- */
-    .screen {
-        display: none; flex: 1; flex-direction: column;
-        overflow-y: auto; -webkit-overflow-scrolling: touch;
-        padding: 20px;
-        padding-bottom: calc(var(--action-bar-height) + 40px);
-    }
-    .screen.active { display: flex; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* --- ヘッダー --- */
+        .app-header {
+            display: flex; align-items: baseline; justify-content: space-between;
+            margin-bottom: 12px; padding: 0 8px;
+        }
+        .header-day { font-size: 32px; font-weight: 800; color: var(--text-primary); letter-spacing: -1px; }
+        .header-date { font-size: 15px; font-weight: 600; color: var(--text-secondary); }
 
-    /* --- ヘッダー --- */
-    .app-header {
-        display: flex; align-items: baseline; justify-content: space-between;
-        margin-bottom: 12px; padding: 0 8px;
-    }
-    .header-day { font-size: 32px; font-weight: 800; color: var(--text-primary); letter-spacing: -1px; }
-    .header-date { font-size: 15px; font-weight: 600; color: var(--text-secondary); }
+        /* --- カード共通 --- */
+        .card { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .card-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; }
 
-    /* --- カード共通 --- */
-    .card { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-    .card-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; }
+        /* --- ホーム画面レイアウト --- */
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 0 10px; }
+        .intake-info { display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
+        .intake-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
+        .big-value { font-size: 52px; font-weight: 800; line-height: 1; color: var(--text-primary); letter-spacing: -1.5px; }
+        .unit { font-size: 18px; font-weight: 600; color: var(--text-secondary); margin-left: 2px; }
+        .mg-value { font-size: 16px; font-weight: 600; color: #888; margin-top: 8px; }
 
-    /* --- ホーム画面レイアウト --- */
-    .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 0 10px; }
-    .intake-info { display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
-    .intake-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
-    .big-value { font-size: 52px; font-weight: 800; line-height: 1; color: var(--text-primary); letter-spacing: -1.5px; }
-    .unit { font-size: 18px; font-weight: 600; color: var(--text-secondary); margin-left: 2px; }
-    .mg-value { font-size: 16px; font-weight: 600; color: #888; margin-top: 8px; }
+        .progress-wrapper { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+        .progress-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+        .progress-bg { fill: none; stroke: #E5E5EA; stroke-width: 12; }
+        .progress-bar { fill: none; stroke: var(--color-blue); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 0.5s ease; }
+        .center-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
+        .percent-val { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+        .percent-label { font-size: 9px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
 
-    .progress-wrapper { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
-    .progress-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
-    .progress-bg { fill: none; stroke: #E5E5EA; stroke-width: 12; }
-    .progress-bar { fill: none; stroke: var(--color-blue); stroke-width: 12; stroke-linecap: round; stroke-dasharray: 440; stroke-dashoffset: 440; transition: stroke-dashoffset 0.5s ease; }
-    .center-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; }
-    .percent-val { font-size: 22px; font-weight: 800; color: var(--text-primary); }
-    .percent-label { font-size: 9px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
+        .middle-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .info-box { background: #F9F9F9; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; justify-content: center; border: 1px solid rgba(0,0,0,0.03); min-height: 100px; }
+        .discard-box { background: rgba(255, 59, 48, 0.05); border-color: rgba(255, 59, 48, 0.1); }
+        .discard-label { font-size: 11px; font-weight: 700; color: var(--color-red); text-transform: uppercase; margin-bottom: 6px; }
+        .discard-val { font-size: 28px; font-weight: 800; color: var(--color-red); }
+        
+        .stay-box { background: rgba(0, 122, 255, 0.05); border-color: rgba(0, 122, 255, 0.1); }
+        .stay-label { font-size: 11px; font-weight: 700; color: var(--color-blue); text-transform: uppercase; margin-bottom: 6px; }
+        .stay-val { font-size: 18px; font-weight: 700; color: #333; line-height: 1.2; }
+        .stay-sub { font-size: 11px; color: #666; margin-top: 4px; }
+        .stay-over { color: var(--color-red) !important; }
 
-    .middle-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
-    .info-box { background: #F9F9F9; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; justify-content: center; border: 1px solid rgba(0,0,0,0.03); min-height: 100px; }
-    .discard-box { background: rgba(255, 59, 48, 0.05); border-color: rgba(255, 59, 48, 0.1); }
-    .discard-label { font-size: 11px; font-weight: 700; color: var(--color-red); text-transform: uppercase; margin-bottom: 6px; }
-    .discard-val { font-size: 28px; font-weight: 800; color: var(--color-red); }
-    
-    .stay-box { background: rgba(0, 122, 255, 0.05); border-color: rgba(0, 122, 255, 0.1); }
-    .stay-label { font-size: 11px; font-weight: 700; color: var(--color-blue); text-transform: uppercase; margin-bottom: 6px; }
-    .stay-val { font-size: 18px; font-weight: 700; color: #333; line-height: 1.2; }
-    .stay-sub { font-size: 11px; color: #666; margin-top: 4px; }
+        .check-container { background: #F2F2F7; border-radius: 16px; padding: 6px; display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
+        .check-btn { flex: 1; background: white; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid transparent; }
+        .check-btn.unchecked { border-color: rgba(255, 59, 48, 0.2); background: #FFF5F5; }
+        .check-btn.checked { background: #E8F5E9; border-color: var(--color-green); color: #2E7D32; }
+        .check-row-1 { display: flex; align-items: center; gap: 6px; }
+        .check-icon { width: 16px; height: 16px; border-radius: 4px; border: 2px solid #C7C7CC; background: white; }
+        .check-btn.checked .check-icon { background: var(--color-green); border-color: var(--color-green); }
+        .check-label { font-size: 13px; font-weight: 700; }
+        .check-time { font-size: 10px; color: #888; height: 12px; }
 
-    .check-container { background: #F2F2F7; border-radius: 16px; padding: 6px; display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
-    .check-btn { flex: 1; background: white; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; transition: 0.15s; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid transparent; -webkit-tap-highlight-color: transparent; }
-    .check-btn:active { transform: scale(0.96); }
-    .check-btn.unchecked { border-color: rgba(255, 59, 48, 0.2); background: #FFF5F5; }
-    .check-btn.checked { background: #E8F5E9; border-color: var(--color-green); color: #2E7D32; }
-    .check-icon { width: 16px; height: 16px; border-radius: 4px; border: 2px solid #C7C7CC; background: white; }
-    .check-btn.checked .check-icon { background: var(--color-green); border-color: var(--color-green); }
-    .check-time { font-size: 10px; color: #888; height: 12px; }
+        .prediction-area { text-align: center; margin-top: 20px; font-size: 13px; color: #888; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .pred-days { font-weight: 700; color: #555; font-size: 15px; }
 
-    .prediction-area { text-align: center; margin-top: 20px; font-size: 13px; color: #888; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .pred-days { font-weight: 700; color: #555; font-size: 15px; }
+        /* 固定アクションボタン */
+        .fixed-actions { 
+            position: fixed; 
+            bottom: calc(var(--tab-bar-height) + 20px); 
+            left: 0; right: 0; 
+            height: var(--action-bar-height); 
+            background: linear-gradient(to top, rgba(242,242,247,1) 50%, rgba(242,242,247,0)); 
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; 
+            padding: 0 20px 10px 20px; z-index: 900; pointer-events: none; 
+        }
+        .action-btn { pointer-events: auto; border: none; border-radius: 20px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .action-btn:active { transform: scale(0.96); opacity: 0.9; }
+        .btn-red { background: rgba(255, 59, 48, 0.15); color: var(--color-red); border: 1px solid rgba(255,59,48,0.1); }
+        .btn-orange { background: rgba(255, 149, 0, 0.15); color: var(--color-orange); border: 1px solid rgba(255,149,0,0.1); }
+        .btn-blue { background: rgba(0, 122, 255, 0.15); color: var(--color-blue); border: 1px solid rgba(0,122,255,0.1); }
+        .btn-icon { width: 28px; height: 28px; stroke-width: 2.5; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+        .btn-label { font-size: 12px; font-weight: 700; }
 
-    /* --- アクションボタン --- */
-    .fixed-actions { position: fixed; bottom: calc(var(--tab-bar-height) + 10px); left: 0; right: 0; height: var(--action-bar-height); background: linear-gradient(to top, rgba(242,242,247,1) 50%, rgba(242,242,247,0)); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 0 20px 10px 20px; z-index: 900; pointer-events: none; }
-    .action-btn { pointer-events: auto; border: none; border-radius: 20px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.1s; -webkit-tap-highlight-color: transparent; cursor: pointer; }
-    .action-btn:active { transform: scale(0.94); opacity: 0.85; }
-    .btn-red { background: rgba(255, 59, 48, 0.15); color: var(--color-red); }
-    .btn-orange { background: rgba(255, 149, 0, 0.15); color: var(--color-orange); }
-    .btn-blue { background: rgba(0, 122, 255, 0.15); color: var(--color-blue); }
-    .btn-icon { width: 28px; height: 28px; stroke-width: 2.5; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
-    .btn-label { font-size: 12px; font-weight: 700; }
+        /* --- ガイド画面 --- */
+        .guide-box { background: #FFF; padding: 20px; border-radius: 20px; margin-bottom: 20px; border-left: 4px solid var(--color-green); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
+        .guide-title { font-weight: 800; font-size: 15px; margin-bottom: 8px; color: var(--color-green); }
+        .guide-text { font-size: 13px; line-height: 1.6; color: #333; }
+        
+        .phase-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 2px solid transparent; opacity: 0.7; transition: 0.3s; }
+        .phase-card.active { opacity: 1; border-color: var(--color-blue); background: #F0F8FF; transform: scale(1.02); }
+        .phase-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+        .phase-name { font-weight: 700; font-size: 15px; }
+        .phase-tag { font-size: 11px; font-weight: 800; background: var(--color-blue); color: white; padding: 2px 8px; border-radius: 10px; }
+        .phase-advice { font-size: 13px; color: #444; line-height: 1.5; }
 
-    /* --- ガイド画面 --- */
-    .guide-box { background: #FFF; padding: 20px; border-radius: 20px; margin-bottom: 20px; border-left: 4px solid var(--color-green); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
-    .guide-title { font-weight: 800; font-size: 15px; margin-bottom: 8px; color: var(--color-green); }
-    .guide-text { font-size: 13px; line-height: 1.6; color: #333; }
-    
-    .phase-card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; border: 2px solid transparent; opacity: 0.7; transition: 0.3s; }
-    .phase-card.active { opacity: 1; border-color: var(--color-blue); background: #F0F8FF; transform: scale(1.02); }
-    .phase-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .phase-name { font-weight: 700; font-size: 15px; }
-    .phase-tag { font-size: 11px; font-weight: 800; background: var(--color-blue); color: white; padding: 2px 8px; border-radius: 10px; }
-    .phase-advice { font-size: 13px; color: #444; line-height: 1.5; }
+        /* --- 設定・ログ --- */
+        .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #eee; }
+        .stepper { display: flex; align-items: center; background: #E5E5EA; border-radius: 12px; padding: 4px; }
+        .step-btn { width: 44px; height: 40px; border: none; background: white; border-radius: 10px; font-size: 22px; font-weight: 600; color: var(--color-blue); cursor: pointer; }
+        .step-val { width: 70px; text-align: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
+        .date-input { border: none; background: #E5E5EA; padding: 8px 12px; border-radius: 8px; font-size: 16px; font-weight: 600; color: var(--color-blue); font-family: inherit; }
+        
+        .log-btn { width: 100%; padding: 18px; background: #F0F8FF; color: var(--color-blue); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 12px; }
+        .reset-btn { width: 100%; padding: 18px; background: white; color: var(--color-red); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 30px; }
+        .backup-btn { width: 100%; padding: 18px; background: #F9F9F9; color: #555; font-weight: 700; border: 1px solid #ddd; border-radius: 16px; font-size: 15px; margin-top: 10px; cursor: pointer; }
 
-    /* --- 設定・ログ --- */
-    .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #eee; }
-    .stepper { display: flex; align-items: center; background: #E5E5EA; border-radius: 12px; padding: 4px; }
-    .step-btn { width: 44px; height: 40px; border: none; background: white; border-radius: 10px; font-size: 22px; font-weight: 600; color: var(--color-blue); cursor: pointer; -webkit-tap-highlight-color: transparent; }
-    .step-btn:active { background: #E5E5EA; }
-    .step-val { width: 70px; text-align: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
-    .date-input { border: none; background: #E5E5EA; padding: 8px 12px; border-radius: 8px; font-size: 16px; font-weight: 600; color: var(--color-blue); font-family: inherit; }
-    .log-btn { width: 100%; padding: 18px; background: #F0F8FF; color: var(--color-blue); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 12px; cursor: pointer; }
-    .reset-btn { width: 100%; padding: 18px; background: white; color: var(--color-red); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 12px; cursor: pointer; }
-    /* バックアップ/リストアボタン */
-    .backup-btn { width: 100%; padding: 18px; background: #F9F9F9; color: #555; font-weight: 700; border: 1px solid #ddd; border-radius: 16px; font-size: 15px; margin-top: 10px; cursor: pointer; }
+        .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .log-table th { text-align: left; color: var(--text-secondary); padding: 8px; border-bottom: 1px solid #ddd; }
+        .log-table td { padding: 12px 8px; border-bottom: 1px solid #eee; font-variant-numeric: tabular-nums; vertical-align: middle; }
+        .log-date { font-weight: 700; color: #333; }
+        .log-pill { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-right: 4px; }
+        .log-stay { color: var(--color-orange); background: rgba(255, 149, 0, 0.1); }
+        .log-change { color: var(--color-blue); background: rgba(0, 122, 255, 0.1); }
+        .log-back { color: var(--color-red); background: rgba(255, 59, 48, 0.1); }
 
-    .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .log-table th { text-align: left; color: var(--text-secondary); padding: 8px; border-bottom: 1px solid #ddd; }
-    .log-table td { padding: 12px 8px; border-bottom: 1px solid #eee; font-variant-numeric: tabular-nums; }
-    .log-pill { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-right: 4px; }
-    .log-stay { color: var(--color-orange); background: rgba(255, 149, 0, 0.1); }
-    .log-change { color: var(--color-blue); background: rgba(0, 122, 255, 0.1); }
-    .log-back { color: var(--color-red); background: rgba(255, 59, 48, 0.1); }
+        /* --- タブバー --- */
+        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: var(--tab-bar-height); background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 1fr 1fr; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
+        .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #AAA; gap: 5px; cursor: pointer; }
+        .tab-item.active { color: var(--color-blue); }
+        .tab-icon { width: 26px; height: 26px; stroke-width: 2; fill: none; stroke: currentColor; }
 
-    /* --- タブバー（セーフエリア対応）--- */
-    .tab-bar { 
-        position: fixed; bottom: 0; left: 0; right: 0; 
-        height: calc(var(--tab-bar-height) + var(--safe-bottom)); 
-        background: rgba(255,255,255,0.95); 
-        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-        border-top: 1px solid rgba(0,0,0,0.1); 
-        display: grid; grid-template-columns: 1fr 1fr 1fr; 
-        padding-bottom: var(--safe-bottom);
-        z-index: 1000; 
-    }
-    .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #AAA; gap: 5px; cursor: pointer; -webkit-tap-highlight-color: transparent; padding-bottom: 0; }
-    .tab-item.active { color: var(--color-blue); }
-    .tab-icon { width: 26px; height: 26px; stroke-width: 2; fill: none; stroke: currentColor; }
-    .tab-label { font-size: 10px; font-weight: 600; }
+        .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-weight: 600; z-index: 2000; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .toast.show { transform: translateX(-50%) translateY(0); }
 
-    .toast { position: fixed; top: max(60px, calc(var(--safe-top) + 40px)); left: 50%; transform: translateX(-50%) translateY(-100px); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-weight: 600; z-index: 2000; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); white-space: nowrap; }
-    .toast.show { transform: translateX(-50%) translateY(0); }
+        /* バックアップモーダル */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal-card { background: white; width: 90%; max-width: 400px; padding: 24px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
+        .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
+        .modal-textarea { width: 100%; height: 120px; background: #F2F2F7; border: none; border-radius: 12px; padding: 12px; font-family: monospace; font-size: 12px; margin-bottom: 16px; resize: none; }
+        .modal-actions { display: flex; gap: 10px; }
+        .modal-btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
+        .modal-btn-primary { background: var(--color-blue); color: white; }
+        .modal-btn-secondary { background: #E5E5EA; color: #333; }
 
-    /* --- PWAインストール促進バナー --- */
-    .pwa-banner { background: linear-gradient(135deg, #007AFF, #5856D6); color: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; display: none; }
-    .pwa-banner.visible { display: flex; align-items: center; gap: 12px; }
-    .pwa-banner-text { flex: 1; font-size: 13px; line-height: 1.4; }
-    .pwa-banner-title { font-weight: 800; font-size: 14px; margin-bottom: 2px; }
-    .pwa-banner-close { background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 14px; font-size: 16px; cursor: pointer; flex-shrink: 0; }
-
-    /* --- バックアップモーダル --- */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; align-items: flex-end; justify-content: center; }
-    .modal-overlay.show { display: flex; }
-    .modal-sheet { background: white; border-radius: 24px 24px 0 0; padding: 20px; padding-bottom: calc(20px + var(--safe-bottom)); width: 100%; max-height: 70vh; overflow-y: auto; }
-    .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
-    .modal-textarea { width: 100%; height: 120px; font-family: monospace; font-size: 12px; border: 1px solid #ddd; border-radius: 12px; padding: 12px; resize: none; }
-    .modal-btn { width: 100%; padding: 16px; border-radius: 14px; border: none; font-size: 15px; font-weight: 700; margin-top: 10px; cursor: pointer; }
-    .modal-btn-primary { background: var(--color-blue); color: white; }
-    .modal-btn-secondary { background: #F2F2F7; color: #333; }
-    .modal-btn-red { background: rgba(255,59,48,0.1); color: var(--color-red); }
-
-    .debug-zone { margin-top: 30px; padding: 20px; background: #333; border-radius: 16px; color: white; text-align: center; }
-    .debug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .debug-btn { background: #555; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer; }
-</style>
-```
-
+        .debug-zone { margin-top: 40px; padding: 20px; background: #333; border-radius: 16px; color: white; text-align: center; }
+        .debug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .debug-btn { background: #555; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-```
-<!-- ホーム画面 -->
-<div id="screen-home" class="screen active">
-    <!-- PWAバナー（スタンドアロンでない時のみ表示） -->
-    <div class="pwa-banner" id="pwaBanner">
-        <div class="pwa-banner-text">
-            <div class="pwa-banner-title">📱 ホーム画面に追加しよう</div>
-            Safari下部の共有ボタン→「ホーム画面に追加」でアプリとして使えます
+    <div id="screen-home" class="screen active">
+        <div class="app-header">
+            <div class="header-day" id="headerDay">Day 1</div>
+            <div class="header-date" id="headerDate">--/--</div>
         </div>
-        <button class="pwa-banner-close" onclick="closePwaBanner()">✕</button>
-    </div>
-
-    <div class="app-header">
-        <div class="header-day" id="headerDay">Day 1</div>
-        <div class="header-date" id="headerDate">--/--</div>
-    </div>
-    <div class="card">
-        <div class="top-row">
-            <div class="intake-info">
-                <div class="intake-label">今日飲む量</div>
-                <div style="display:flex; align-items:baseline;">
-                    <span class="big-value" id="valIntake">50.0</span><span class="unit">ml</span>
+        <div class="card">
+            <div class="top-row">
+                <div class="intake-info">
+                    <div class="intake-label">今日飲む量</div>
+                    <div style="display:flex; align-items:baseline;">
+                        <span class="big-value" id="valIntake">50.0</span><span class="unit">ml</span>
+                    </div>
+                    <div class="mg-value">= <span id="valMg">2.000</span> mg</div>
                 </div>
-                <div class="mg-value">= <span id="valMg">2.000</span> mg</div>
-            </div>
-            <div class="progress-wrapper">
-                <svg class="progress-svg" viewBox="0 0 160 160">
-                    <circle class="progress-bg" cx="80" cy="80" r="70"></circle>
-                    <circle class="progress-bar" id="ringBar" cx="80" cy="80" r="70"></circle>
-                </svg>
-                <div class="center-text">
-                    <span class="percent-val" id="percentVal">0%</span><span class="percent-label">完了</span>
+                <div class="progress-wrapper">
+                    <svg class="progress-svg" viewBox="0 0 160 160">
+                        <circle class="progress-bg" cx="80" cy="80" r="70"></circle>
+                        <circle class="progress-bar" id="ringBar" cx="80" cy="80" r="70"></circle>
+                    </svg>
+                    <div class="center-text">
+                        <span class="percent-val" id="percentVal">0%</span><span class="percent-label">完了</span>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="middle-row">
-            <div class="info-box discard-box">
-                <div class="discard-label">廃棄する量</div>
-                <div class="discard-val"><span id="valDiscard">0.0</span><span style="font-size:14px; margin-left:2px;">ml</span></div>
+            <div class="middle-row">
+                <div class="info-box discard-box">
+                    <div class="discard-label">廃棄する量</div>
+                    <div class="discard-val"><span id="valDiscard">0.0</span><span style="font-size:14px; margin-left:2px;">ml</span></div>
+                </div>
+                <div class="info-box stay-box" id="statusBox">
+                    <div class="stay-label" id="statusTitle">ステイ期間</div>
+                    <div class="stay-val" id="statusDesc">1日目</div>
+                    <div class="stay-sub" id="statusSub">/ 3日</div>
+                </div>
             </div>
-            <div class="info-box stay-box" id="statusBox">
-                <div class="stay-label" id="statusTitle">ステイ期間</div>
-                <div class="stay-val" id="statusDesc">1日目</div>
-                <div class="stay-sub" id="statusSub">/ 3日</div>
+            <div class="check-container">
+                <div class="check-btn" id="btnMorning" onclick="toggleCheck('morning')">
+                    <div class="check-row-1"><div class="check-icon"></div><span class="check-label">朝の分</span></div>
+                    <div class="check-time" id="timeMorning">--:--</div>
+                </div>
+                <div class="check-btn" id="btnNight" onclick="toggleCheck('night')">
+                    <div class="check-row-1"><div class="check-icon"></div><span class="check-label">夜の分</span></div>
+                    <div class="check-time" id="timeNight">--:--</div>
+                </div>
             </div>
-        </div>
-        <div class="check-container">
-            <div class="check-btn" id="btnMorning" onclick="toggleCheck('morning')">
-                <div style="display:flex; align-items:center; gap:6px;"><div class="check-icon"></div><span class="check-label">朝の分</span></div>
-                <div class="check-time" id="timeMorning">--:--</div>
-            </div>
-            <div class="check-btn" id="btnNight" onclick="toggleCheck('night')">
-                <div style="display:flex; align-items:center; gap:6px;"><div class="check-icon"></div><span class="check-label">夜の分</span></div>
-                <div class="check-time" id="timeNight">--:--</div>
-            </div>
-        </div>
-        <div class="prediction-area">
-            <span>完了予測:</span><span class="pred-days">あと <span id="predDays">0</span> 日</span>
-            <span style="color:#CCC;">|</span><span id="predDate">--/--</span>
-        </div>
-    </div>
-</div>
-
-<!-- ガイド画面 -->
-<div id="screen-guide" class="screen">
-    <div class="guide-box">
-        <div class="guide-title">マイクロテーパリング法とは？</div>
-        <div class="guide-text">
-            水溶液を用いて、錠剤カットでは不可能な「微量（0.01mg単位）」の減薬を行う手法です。脳が薬の減少に気づかないほどのペースで進めることで、離脱症状を最小限に抑えることを目的としています。
-        </div>
-    </div>
-    <div class="guide-box">
-        <div class="guide-title">ペース配分について</div>
-        <div class="guide-text">
-            基本ルールは<strong>「3日置きに廃棄量を0.2ml増やす」</strong>ことです。特に最初の1ヶ月は脳を慣らすためにこのペースをしっかり守り、焦らずに進めてください。体調が悪い時は無理に進めず「ステイ」を活用しましょう。
-        </div>
-    </div>
-    <div class="card">
-        <div class="card-header">50ml水溶液の作り方</div>
-        <div style="display:flex; flex-direction:column; gap:14px;">
-            <div style="display:flex; gap:12px; align-items:center;">
-                <div style="background:#E5E5EA; width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">1</div>
-                <div style="font-size:14px; font-weight:500;">薬(2mg)を粉砕し、50mlの牛乳に入れる。</div>
-            </div>
-            <div style="display:flex; gap:12px; align-items:center;">
-                <div style="background:#E5E5EA; width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">2</div>
-                <div style="font-size:14px; font-weight:500;">蓋をして<strong>30秒以上激しく</strong>振る。</div>
-            </div>
-            <div style="display:flex; gap:12px; align-items:center;">
-                <div style="background:#FFEBEA; color:var(--color-red); width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">3</div>
-                <div style="font-size:14px; font-weight:500; color:var(--color-red);"><strong>廃棄量（<span id="guideDiscardVal">0.0</span>ml）</strong>を正確に吸い取り、シンクに捨てる。</div>
-            </div>
-            <div style="display:flex; gap:12px; align-items:center;">
-                <div style="background:#E5E5EA; width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">4</div>
-                <div style="font-size:14px; font-weight:500;">残りを<strong>半分ずつに分け、朝と晩の分</strong>とする。</div>
+            <div class="prediction-area">
+                <span>完了予測:</span><span class="pred-days">あと <span id="predDays">0</span> 日</span>
+                <span style="color:#CCC;">|</span><span id="predDate">--/--</span>
             </div>
         </div>
     </div>
-    <div class="card-header" style="margin-left:8px;">フェーズ確認</div>
-    <div id="phaseListContainer"></div>
-</div>
 
-<!-- 設定画面 -->
-<div id="screen-settings" class="screen">
-    <div class="card">
-        <div class="card-header">減薬開始日・基本データ</div>
-        <div class="setting-row"><span>減薬開始日</span><input type="date" id="inpStartDate" class="date-input" onchange="changeStartDate(this.value)"></div>
-        <div class="setting-row"><span>薬の総量 (mg)</span><div class="stepper"><button class="step-btn" onclick="changeSet('totalMg', -0.1)">−</button><div class="step-val" id="disp_totalMg">2.0</div><button class="step-btn" onclick="changeSet('totalMg', 0.1)">＋</button></div></div>
-        <div class="setting-row"><span>溶液の総量 (ml)</span><div class="stepper"><button class="step-btn" onclick="changeSet('totalWater', -1)">−</button><div class="step-val" id="disp_totalWater">50</div><button class="step-btn" onclick="changeSet('totalWater', 1)">＋</button></div></div>
+    <div class="fixed-actions" id="fixedActions">
+        <button class="action-btn btn-red" onclick="update(-1)">
+            <svg class="btn-icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            <span class="btn-label">戻す</span>
+        </button>
+        <button class="action-btn btn-orange" onclick="recordStay()">
+            <svg class="btn-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>
+            <span class="btn-label">ステイ</span>
+        </button>
+        <button class="action-btn btn-blue" onclick="update(1)">
+            <svg class="btn-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            <span class="btn-label">進める</span>
+        </button>
     </div>
-    <div class="card">
-        <div class="card-header">ペース配分</div>
-        <div class="setting-row"><span>廃棄の増減幅</span><div class="stepper"><button class="step-btn" onclick="changeSet('baseStep', -0.1)">−</button><div class="step-val"><span id="disp_baseStep">0.2</span>ml</div><button class="step-btn" onclick="changeSet('baseStep', 0.1)">＋</button></div></div>
-        <div class="setting-row"><span>変更の間隔</span><div class="stepper"><button class="step-btn" onclick="changeSet('baseInterval', -1)">−</button><div class="step-val"><span id="disp_baseInterval">3</span>日</div><button class="step-btn" onclick="changeSet('baseInterval', 1)">＋</button></div></div>
+
+    <div id="screen-guide" class="screen">
+        <div class="guide-box">
+            <div class="guide-title">マイクロテーパリング法とは？</div>
+            <div class="guide-text">
+                水溶液を用いて、錠剤カットでは不可能な「微量（0.01mg単位）」の減薬を行う手法です。脳が薬の減少に気づかないほどのペースで進めることで、離脱症状を最小限に抑えることを目的としています。
+            </div>
+        </div>
+        <div class="guide-box">
+            <div class="guide-title">ペース配分について</div>
+            <div class="guide-text">
+                基本ルールは<strong>「3日置きに廃棄量を0.2ml増やす」</strong>ことです。特に最初の1ヶ月は脳を慣らすためにこのペースをしっかり守り、焦らずに進めてください。体調が悪い時は無理に進めず「ステイ」を活用しましょう。
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header">50ml水溶液の作り方</div>
+            <div style="display:flex; flex-direction:column; gap:14px;">
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="background:#E5E5EA; width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">1</div>
+                    <div style="font-size:14px; font-weight:500;">薬(2mg)を粉砕し、50mlの牛乳に入れる。</div>
+                </div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="background:#E5E5EA; width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">2</div>
+                    <div style="font-size:14px; font-weight:500;">蓋をして<strong>30秒以上激しく</strong>振る。</div>
+                </div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="background:#FFEBEA; color:var(--color-red); width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">3</div>
+                    <div style="font-size:14px; font-weight:500; color:var(--color-red);"><strong>廃棄量（<span id="guideDiscardVal">0.0</span>ml）</strong>を正確に吸い取り、シンクに捨てる。</div>
+                </div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                    <div style="background:#E5E5EA; width:24px; height:24px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">4</div>
+                    <div style="font-size:14px; font-weight:500;">残りを<strong>半分ずつに分け、朝と晩の分</strong>とする。</div>
+                </div>
+            </div>
+        </div>
+        <div class="card-header" style="margin-left:8px;">フェーズ確認</div>
+        <div id="phaseListContainer"></div>
     </div>
-    <button class="log-btn" onclick="switchTab('log', null)">減薬記録ログを見る</button>
-    <!-- バックアップ機能 -->
-    <div class="card" style="margin-top:16px;">
-        <div class="card-header">⚠️ データ保護（重要）</div>
-        <div style="font-size:13px; color:#666; margin-bottom:12px; line-height:1.6;">ブラウザのデータ削除でデータが消える場合があります。定期的にバックアップを取ることを強くおすすめします。</div>
-        <button class="backup-btn" onclick="showBackup()">📤 データをバックアップ（コピー）</button>
-        <button class="backup-btn" onclick="showRestore()">📥 バックアップから復元</button>
+
+    <div id="screen-settings" class="screen">
+        <div class="card">
+            <div class="card-header">減薬開始日・基本データ</div>
+            <div class="setting-row"><span>減薬開始日</span><input type="date" id="inpStartDate" class="date-input" onchange="changeStartDate(this.value)"></div>
+            <div class="setting-row"><span>薬の総量 (mg)</span><div class="stepper"><button class="step-btn" onclick="changeSet('totalMg', -0.1)">−</button><div class="step-val" id="disp_totalMg">2.0</div><button class="step-btn" onclick="changeSet('totalMg', 0.1)">＋</button></div></div>
+            <div class="setting-row"><span>溶液の総量 (ml)</span><div class="stepper"><button class="step-btn" onclick="changeSet('totalWater', -1)">−</button><div class="step-val" id="disp_totalWater">50</div><button class="step-btn" onclick="changeSet('totalWater', 1)">＋</button></div></div>
+        </div>
+        <div class="card">
+            <div class="card-header">ペース配分</div>
+            <div class="setting-row"><span>廃棄の増減幅</span><div class="stepper"><button class="step-btn" onclick="changeSet('baseStep', -0.1)">−</button><div class="step-val"><span id="disp_baseStep">0.2</span>ml</div><button class="step-btn" onclick="changeSet('baseStep', 0.1)">＋</button></div></div>
+            <div class="setting-row"><span>変更の間隔</span><div class="stepper"><button class="step-btn" onclick="changeSet('baseInterval', -1)">−</button><div class="step-val"><span id="disp_baseInterval">3</span>日</div><button class="step-btn" onclick="changeSet('baseInterval', 1)">＋</button></div></div>
+        </div>
+        <button class="log-btn" onclick="switchTab('log', null)">減薬記録ログを見る</button>
+        
+        <div class="card" style="margin-top:16px;">
+            <div class="card-header">⚠️ データ保護（重要）</div>
+            <div style="font-size:13px; color:#666; margin-bottom:12px; line-height:1.6;">データの消失を防ぐため、定期的にバックアップを取ることを推奨します。</div>
+            <button class="backup-btn" onclick="exportData()">📤 データをバックアップ（コピー）</button>
+            <button class="backup-btn" onclick="importData()">📥 バックアップから復元</button>
+        </div>
+
+        <button class="reset-btn" onclick="fullReset()">データを消去してリセット</button>
+        <div class="debug-zone">
+            <div style="font-size:12px; font-weight:700; color:#AAA;">🧪 開発者メニュー (Debug)</div>
+            <div class="debug-grid"><button class="debug-btn" onclick="debugTimeTravel(1)">＋1日進める</button><button class="debug-btn" onclick="debugTimeTravel(0)">リセット</button></div>
+        </div>
+        <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v15.1</div>
     </div>
-    <button class="reset-btn" onclick="fullReset()">データを消去してリセット</button>
-    <div class="debug-zone">
-        <div style="font-size:12px; font-weight:700; color:#AAA;">🧪 開発者メニュー (Debug)</div>
-        <div class="debug-grid">
-            <button class="debug-btn" onclick="debugTimeTravel(1)">＋1日進める</button>
-            <button class="debug-btn" onclick="debugTimeTravel(0)">リセット</button>
+
+    <div id="screen-log" class="screen">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <div class="header-day" style="font-size:24px;">記録ログ</div>
+            <button onclick="switchTab('settings', null)" style="border:none; background:#E5E5EA; padding:8px 16px; border-radius:20px; font-weight:700;">閉じる</button>
+        </div>
+        <div class="card" style="padding:0; overflow:hidden;">
+            <table class="log-table">
+                <thead><tr><th>日付</th><th>Day</th><th>記録</th><th>服用</th></tr></thead>
+                <tbody id="logTableBody"></tbody>
+            </table>
+            <div id="logEmpty" style="padding:20px; text-align:center; color:#999;">記録はありません</div>
         </div>
     </div>
-    <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v14.0 PWA</div>
-</div>
 
-<!-- ログ画面 -->
-<div id="screen-log" class="screen">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <div class="header-day" style="font-size:24px;">記録ログ</div>
-        <button onclick="switchTab('settings', null)" style="border:none; background:#E5E5EA; padding:8px 16px; border-radius:20px; font-weight:700; cursor:pointer;">閉じる</button>
+    <div class="tab-bar">
+        <div class="tab-item active" id="tab-home" onclick="switchTab('home', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="tab-label">ホーム</span>
+        </div>
+        <div class="tab-item" id="tab-guide" onclick="switchTab('guide', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            <span class="tab-label">ガイド</span>
+        </div>
+        <div class="tab-item" id="tab-settings" onclick="switchTab('settings', this)">
+            <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="tab-label">設定</span>
+        </div>
     </div>
-    <div class="card" style="padding:0; overflow:hidden;">
-        <table class="log-table">
-            <thead><tr><th>日付</th><th>Day</th><th>記録</th><th>服用</th></tr></thead>
-            <tbody id="logTableBody"></tbody>
-        </table>
-        <div id="logEmpty" style="padding:20px; text-align:center; color:#999;">記録はありません</div>
+    
+    <div id="toast" class="toast">メッセージ</div>
+
+    <div class="modal-overlay" id="backupModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
+        <div class="modal-card" style="background:white; width:90%; max-width:400px; padding:20px; border-radius:16px;">
+            <h3 style="margin-top:0;">データバックアップ</h3>
+            <textarea id="backupText" style="width:100%; height:100px; border:1px solid #ddd; border-radius:8px; padding:8px; font-size:12px;"></textarea>
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button onclick="closeBackupModal()" style="flex:1; padding:10px; border:none; background:#eee; border-radius:8px;">閉じる</button>
+                <button id="backupActionBtn" onclick="execImport()" style="flex:1; padding:10px; border:none; background:var(--color-blue); color:white; border-radius:8px;">実行</button>
+            </div>
+        </div>
     </div>
-</div>
 
-<!-- アクションボタン -->
-<div class="fixed-actions" id="fixedActions">
-    <button class="action-btn btn-red" onclick="update(-1)">
-        <svg class="btn-icon" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"></polyline></svg>
-        <span class="btn-label">戻す</span>
-    </button>
-    <button class="action-btn btn-orange" onclick="recordStay()">
-        <svg class="btn-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"></circle></svg>
-        <span class="btn-label">ステイ</span>
-    </button>
-    <button class="action-btn btn-blue" onclick="update(1)">
-        <svg class="btn-icon" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
-        <span class="btn-label">進める</span>
-    </button>
-</div>
+    <script>
+        const DB_KEY = 'medMgr_v15_final';
+        const defaultState = {
+            startDate: Date.now(),      
+            lastChangeDate: Date.now(), 
+            backupLastChangeDate: null, 
+            discard: 0.0,
+            totalMg: 2.0,
+            totalWater: 50.0,
+            baseStep: 0.2,
+            baseInterval: 3,
+            checks: { date: "", morning: false, night: false, timeM: "", timeN: "" },
+            history: [],
+            debugOffsetDays: 0
+        };
 
-<!-- タブバー -->
-<div class="tab-bar">
-    <div class="tab-item active" id="tab-home" onclick="switchTab('home', this)">
-        <svg class="tab-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span class="tab-label">ホーム</span>
-    </div>
-    <div class="tab-item" id="tab-guide" onclick="switchTab('guide', this)">
-        <svg class="tab-icon" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        <span class="tab-label">ガイド</span>
-    </div>
-    <div class="tab-item" id="tab-settings" onclick="switchTab('settings', this)">
-        <svg class="tab-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        <span class="tab-label">設定</span>
-    </div>
-</div>
+        let state = JSON.parse(localStorage.getItem(DB_KEY)) || defaultState;
+        if(!state.history) state.history = [];
+        if(state.debugOffsetDays === undefined) state.debugOffsetDays = 0;
 
-<div id="toast" class="toast">メッセージ</div>
-
-<!-- バックアップ/リストアモーダル -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
-    <div class="modal-sheet">
-        <div class="modal-title" id="modalTitle">バックアップ</div>
-        <div id="modalContent"></div>
-    </div>
-</div>
-
-<script>
-    // ============================================================
-    // データ管理
-    // ============================================================
-    const DB_KEY = 'medMgr_v14_pwa';
-    const defaultState = {
-        startDate: Date.now(),
-        lastChangeDate: Date.now(),
-        backupLastChangeDate: null,
-        discard: 0.0,
-        totalMg: 2.0,
-        totalWater: 50.0,
-        baseStep: 0.2,
-        baseInterval: 3,
-        checks: { date: "", morning: false, night: false, timeM: "", timeN: "" },
-        history: [],
-        debugOffsetDays: 0,
-        pwaBannerDismissed: false
-    };
-
-    let state = JSON.parse(localStorage.getItem(DB_KEY)) || defaultState;
-    if(!state.history) state.history = [];
-    if(state.debugOffsetDays === undefined) state.debugOffsetDays = 0;
-
-    // ============================================================
-    // ユーティリティ
-    // ============================================================
-    function getNow() {
-        const d = new Date();
-        d.setDate(d.getDate() + (state.debugOffsetDays || 0));
-        return d;
-    }
-
-    function getDaysDiff(timestamp) {
-        const now = getNow(); const target = new Date(timestamp);
-        now.setHours(0,0,0,0); target.setHours(0,0,0,0);
-        return Math.floor((now - target) / 86400000) + 1;
-    }
-
-    function checkDateReset() {
-        const today = getNow().toLocaleDateString('ja-JP');
-        if (state.checks.date !== today) {
-            state.checks = { date: today, morning: false, night: false, timeM:"", timeN:"" };
-            save();
+        function getNow() {
+            const d = new Date();
+            d.setDate(d.getDate() + (state.debugOffsetDays || 0));
+            return d;
         }
-    }
 
-    function save() {
-        const toSave = JSON.parse(JSON.stringify(state));
-        toSave.debugOffsetDays = 0; // デバッグオフセットは保存しない
-        localStorage.setItem(DB_KEY, JSON.stringify(toSave));
-        render();
-    }
+        function getDaysDiff(timestamp) {
+            const now = getNow(); const target = new Date(timestamp);
+            now.setHours(0,0,0,0); target.setHours(0,0,0,0);
+            return Math.floor((now - target) / 86400000) + 1;
+        }
 
-    // ============================================================
-    // ビジネスロジック
-    // ============================================================
-    function addToHistory(actionType, discardVal) {
-        const now = getNow();
-        const todayStr = `${now.getMonth()+1}/${now.getDate()}`;
-        const totalDays = getDaysDiff(state.startDate);
-        let takeStatus = (state.checks.morning ? "朝" : "") + (state.checks.morning && state.checks.night ? "・" : "") + (state.checks.night ? "夜" : "");
-        if(takeStatus === "") takeStatus = "－";
-        const entry = { dateStr: todayStr, dayNum: totalDays, action: actionType, discard: discardVal, take: takeStatus };
-        const idx = state.history.findIndex(h => h.dateStr === todayStr);
-        if(idx !== -1) state.history.splice(idx, 1);
-        state.history.unshift(entry);
-    }
-
-    function getPhaseInfo(discard) {
-        const intake = state.totalWater - discard;
-        const percent = (discard / state.totalWater) * 100;
-        if (intake <= 0.01) return { id: 4, name: "断薬完了", advice: "お疲れ様でした！目標達成です。" };
-        if (intake <= 10.0) return { id: 3, name: "Phase 4: 着陸期", advice: "残り10ml以下。最も慎重さが必要です。ペースを落とし、ステイを多用しましょう。" };
-        if (percent >= 50) return { id: 2, name: "Phase 3: 巡航期(後半)", advice: "重要：50％で折り返し地点です。離脱症状が出やすくなります。ペースを『3日〜1週間置き』の範囲で調整してください。" };
-        if (discard > 2.0) return { id: 1, name: "Phase 2: 巡航期(前半)", advice: "リズムを作る期間。5％・10％・20％と段階的に減らしていきましょう。" };
-        return { id: 0, name: "Phase 1: 導入期", advice: "最初の1ヶ月は体を慣らす期間です。基本ペース（3日おき）を守りましょう。不調があれば数日間ステイしましょう。" };
-    }
-
-    function getStatus() {
-        const currentDays = getDaysDiff(state.lastChangeDate);
-        const totalDays = getDaysDiff(state.startDate);
-        const standard = state.baseInterval;
-        if (currentDays > standard) return { title: "見直し目安", desc: `${currentDays}日目`, sub: `/ ${standard}日 (目安超過)`, ready: true, day: totalDays };
-        return { title: "安定期間", desc: `${currentDays}日目`, sub: `/ ${standard}日`, ready: false, day: totalDays };
-    }
-
-    function calculatePrediction() {
-        let d = state.discard; let days = 0;
-        if(state.baseStep <= 0) return { days: "---", date: "--/--" };
-        while(d < state.totalWater && days < 5000) { d += state.baseStep; days += state.baseInterval; }
-        const dt = getNow(); dt.setDate(dt.getDate() + days);
-        return { days: days, date: `${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()} 完了` };
-    }
-
-    // ============================================================
-    // アクション
-    // ============================================================
-    function update(dir) {
-        const next = Math.round((state.discard + (state.baseStep * dir)) * 100) / 100;
-        if(next >= -0.01 && next <= state.totalWater + 0.01) {
-            const now = getNow().getTime();
-            if (dir > 0) {
-                state.backupLastChangeDate = state.lastChangeDate;
-                state.lastChangeDate = now;
-                showToast("✅ 進めました！");
-            } else {
-                if (state.backupLastChangeDate) {
-                    const failedTime = now - state.lastChangeDate;
-                    state.lastChangeDate = state.backupLastChangeDate + failedTime;
-                    state.backupLastChangeDate = null;
-                    showToast("↩️ 戻しました");
-                } else {
-                    state.lastChangeDate = now;
-                    showToast("↩️ 戻しました");
-                }
+        function checkDateReset() {
+            const today = getNow().toLocaleDateString('ja-JP');
+            if (state.checks.date !== today) {
+                state.checks = { date: today, morning: false, night: false, timeM:"", timeN:"" };
+                save();
             }
-            state.discard = Math.max(0, Math.min(state.totalWater, next));
-            addToHistory(dir > 0 ? 'up' : 'down', state.discard);
+        }
+
+        function save() {
+            const toSave = JSON.parse(JSON.stringify(state));
+            toSave.debugOffsetDays = 0;
+            localStorage.setItem(DB_KEY, JSON.stringify(toSave));
+            render();
+        }
+
+        function addToHistory(actionType, discardVal) {
+            const now = getNow();
+            const todayStr = `${now.getMonth()+1}/${now.getDate()}`;
+            const totalDays = getDaysDiff(state.startDate);
+            let takeStatus = (state.checks.morning ? "朝" : "") + (state.checks.morning && state.checks.night ? "・" : "") + (state.checks.night ? "夜" : "");
+            if(takeStatus === "") takeStatus = "－";
+            const entry = { dateStr: todayStr, dayNum: totalDays, action: actionType, discard: discardVal, take: takeStatus };
+            const idx = state.history.findIndex(h => h.dateStr === todayStr);
+            if(idx !== -1) state.history.splice(idx, 1);
+            state.history.unshift(entry);
+        }
+
+        function getPhaseInfo(discard) {
+            const intake = state.totalWater - discard;
+            const percent = (discard / state.totalWater) * 100;
+            if (intake <= 0.01) return { id: 4, name: "断薬完了", advice: "お疲れ様でした。成功です。" };
+            if (intake <= 10.0) return { id: 3, name: "Phase 4: 着陸期", advice: "残り10ml以下。最も慎重さが必要です。ペースを落とし、ステイを多用しましょう。" };
+            if (percent >= 50) return { id: 2, name: "Phase 3: 巡航期(後半)", advice: "重要：折り返し地点です。離脱症状が出やすくなります。ペースを『3日〜1週間置き』の範囲で調整してください。" };
+            if (discard > 2.0) return { id: 1, name: "Phase 2: 巡航期(前半)", advice: "リズムを作る期間です。順調でも飛ばしすぎず、基本ペースを維持してください。" };
+            return { id: 0, name: "Phase 1: 導入期", advice: "体を慣らす期間です。基本ルール通り、3日置きに0.2mlずつ破棄量を増やしましょう。" };
+        }
+
+        function render() {
+            checkDateReset();
+            const intake = Math.max(0, state.totalWater - state.discard);
+            const mg = intake * (state.totalWater > 0 ? state.totalMg / state.totalWater : 0);
+            const percent = state.totalWater > 0 ? (state.discard / state.totalWater) * 100 : 0;
+            const status = getStatus();
+            const phase = getPhaseInfo(state.discard);
+
+            document.getElementById('headerDay').innerText = `Day ${status.day}`;
+            document.getElementById('headerDate').innerText = getNow().toLocaleDateString('ja-JP', {month:'numeric', day:'numeric'});
+            document.getElementById('valIntake').innerText = intake.toFixed(1);
+            document.getElementById('valMg').innerText = mg.toFixed(3);
+            document.getElementById('valDiscard').innerText = state.discard.toFixed(1);
+            document.getElementById('percentVal').innerText = Math.floor(percent) + "%";
+
+            const sBox = document.getElementById('statusBox');
+            document.getElementById('statusTitle').innerText = status.title;
+            document.getElementById('statusDesc').innerText = status.desc;
+            document.getElementById('statusSub').innerText = status.sub;
+            sBox.style.backgroundColor = status.ready ? "#F0F8FF" : "#F9F9F9";
+            sBox.style.borderColor = status.ready ? "var(--color-blue)" : "rgba(0,0,0,0.03)";
+            document.getElementById('statusTitle').style.color = status.ready ? "var(--color-blue)" : (status.title === "安定期間" ? "#555" : "var(--color-blue)");
+            document.getElementById('statusDesc').style.color = status.ready ? "var(--color-red)" : "#333";
+
+            document.getElementById('btnMorning').className = `check-btn ${state.checks.morning ? 'checked' : 'unchecked'}`;
+            document.getElementById('btnNight').className = `check-btn ${state.checks.night ? 'checked' : 'unchecked'}`;
+            document.getElementById('timeMorning').innerText = state.checks.timeM || "--:--";
+            document.getElementById('timeNight').innerText = state.checks.timeN || "--:--";
+
+            document.getElementById('ringBar').style.strokeDashoffset = 440 - (percent / 100) * 440;
+            document.getElementById('guideDiscardVal').innerText = state.discard.toFixed(1);
+
+            const pred = calculatePrediction();
+            document.getElementById('predDays').innerText = pred.days;
+            document.getElementById('predDate').innerText = pred.date;
+
+            const d = new Date(state.startDate);
+            document.getElementById('inpStartDate').value = `${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}-${('0'+d.getDate()).slice(-2)}`;
+            document.getElementById('disp_totalMg').innerText = state.totalMg.toFixed(1);
+            document.getElementById('disp_totalWater').innerText = state.totalWater.toFixed(0);
+            document.getElementById('disp_baseStep').innerText = state.baseStep.toFixed(1);
+            document.getElementById('disp_baseInterval').innerText = state.baseInterval;
+
+            renderPhaseList(phase.id);
+            renderLog();
+        }
+
+        function getStatus() {
+            const currentDays = getDaysDiff(state.lastChangeDate);
+            const totalDays = getDaysDiff(state.startDate);
+            const standard = state.baseInterval;
+            if (currentDays > standard) return { title: "見直し目安", desc: `${currentDays}日目`, sub: `/ ${standard}日 (目安超過)`, ready: true, day: totalDays };
+            return { title: "安定期間", desc: `${currentDays}日目`, sub: `/ ${standard}日`, ready: false, day: totalDays };
+        }
+
+        function calculatePrediction() {
+            let d = state.discard; let days = 0;
+            if(state.baseStep <= 0) return { days: "---", date: "--/--" };
+            while(d < state.totalWater && days < 5000) { d += state.baseStep; days += state.baseInterval; }
+            const dt = getNow(); dt.setDate(dt.getDate() + days);
+            return { days: days, date: `${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()} 完了` };
+        }
+
+        function update(dir) {
+            const next = Math.round((state.discard + (state.baseStep * dir)) * 100) / 100;
+            if(next >= -0.01 && next <= state.totalWater + 0.01) {
+                const now = getNow().getTime();
+                if (dir > 0) {
+                    state.backupLastChangeDate = state.lastChangeDate;
+                    state.lastChangeDate = now;
+                    showToast("進めました");
+                } else {
+                    if (state.backupLastChangeDate) {
+                        const failedTime = now - state.lastChangeDate;
+                        state.lastChangeDate = state.backupLastChangeDate + failedTime;
+                        state.backupLastChangeDate = null;
+                        showToast("戻しました (期間復元)");
+                    } else {
+                        state.lastChangeDate = now;
+                        showToast("戻しました");
+                    }
+                }
+                state.discard = Math.max(0, Math.min(state.totalWater, next));
+                addToHistory(dir > 0 ? 'up' : 'down', state.discard);
+                save();
+            }
+        }
+
+        function recordStay() {
+            showToast("ステイを記録しました");
+            addToHistory('stay', state.discard);
             save();
         }
-    }
 
-    function recordStay() {
-        showToast("🔵 ステイを記録しました");
-        addToHistory('stay', state.discard);
-        save();
-    }
-
-    function toggleCheck(type) {
-        const now = new Date();
-        const tStr = `${now.getHours()}:${('0'+now.getMinutes()).slice(-2)}`;
-        if(type === 'morning') {
-            state.checks.morning = !state.checks.morning;
-            state.checks.timeM = state.checks.morning ? tStr : "";
-        } else {
-            state.checks.night = !state.checks.night;
-            state.checks.timeN = state.checks.night ? tStr : "";
+        function toggleCheck(type) {
+            const now = new Date();
+            const tStr = `${now.getHours()}:${('0'+now.getMinutes()).slice(-2)}`;
+            if(type === 'morning') {
+                state.checks.morning = !state.checks.morning;
+                state.checks.timeM = state.checks.morning ? tStr : "";
+            } else {
+                state.checks.night = !state.checks.night;
+                state.checks.timeN = state.checks.night ? tStr : "";
+            }
+            save();
         }
-        save();
-    }
 
-    // ============================================================
-    // レンダリング
-    // ============================================================
-    function render() {
-        checkDateReset();
-        const intake = Math.max(0, state.totalWater - state.discard);
-        const mg = intake * (state.totalWater > 0 ? state.totalMg / state.totalWater : 0);
-        const percent = state.totalWater > 0 ? (state.discard / state.totalWater) * 100 : 0;
-        const status = getStatus();
-        const phase = getPhaseInfo(state.discard);
-
-        document.getElementById('headerDay').innerText = `Day ${status.day}`;
-        document.getElementById('headerDate').innerText = getNow().toLocaleDateString('ja-JP', {month:'numeric', day:'numeric'});
-        document.getElementById('valIntake').innerText = intake.toFixed(1);
-        document.getElementById('valMg').innerText = mg.toFixed(3);
-        document.getElementById('valDiscard').innerText = state.discard.toFixed(1);
-        document.getElementById('percentVal').innerText = Math.floor(percent) + "%";
-
-        const sBox = document.getElementById('statusBox');
-        document.getElementById('statusTitle').innerText = status.title;
-        document.getElementById('statusDesc').innerText = status.desc;
-        document.getElementById('statusSub').innerText = status.sub;
-        sBox.style.backgroundColor = status.ready ? "#F0F8FF" : "#F9F9F9";
-        sBox.style.borderColor = status.ready ? "var(--color-blue)" : "rgba(0,0,0,0.03)";
-
-        document.getElementById('btnMorning').className = `check-btn ${state.checks.morning ? 'checked' : 'unchecked'}`;
-        document.getElementById('btnNight').className = `check-btn ${state.checks.night ? 'checked' : 'unchecked'}`;
-        document.getElementById('timeMorning').innerText = state.checks.timeM || "--:--";
-        document.getElementById('timeNight').innerText = state.checks.timeN || "--:--";
-
-        document.getElementById('ringBar').style.strokeDashoffset = 440 - (percent / 100) * 440;
-        document.getElementById('guideDiscardVal').innerText = state.discard.toFixed(1);
-
-        const pred = calculatePrediction();
-        document.getElementById('predDays').innerText = pred.days;
-        document.getElementById('predDate').innerText = pred.date;
-
-        const d = new Date(state.startDate);
-        document.getElementById('inpStartDate').value = `${d.getFullYear()}-${('0'+(d.getMonth()+1)).slice(-2)}-${('0'+d.getDate()).slice(-2)}`;
-        document.getElementById('disp_totalMg').innerText = state.totalMg.toFixed(1);
-        document.getElementById('disp_totalWater').innerText = state.totalWater.toFixed(0);
-        document.getElementById('disp_baseStep').innerText = state.baseStep.toFixed(1);
-        document.getElementById('disp_baseInterval').innerText = state.baseInterval;
-
-        renderPhaseList(phase.id);
-        renderLog();
-        renderPwaBanner();
-    }
-
-    function renderLog() {
-        const tbody = document.getElementById('logTableBody');
-        tbody.innerHTML = "";
-        if(!state.history.length) {
-            document.getElementById('logEmpty').style.display = 'block';
-            return;
+        function renderLog() {
+            const tbody = document.getElementById('logTableBody');
+            tbody.innerHTML = "";
+            if(!state.history.length) {
+                document.getElementById('logEmpty').style.display = 'block';
+                return;
+            }
+            document.getElementById('logEmpty').style.display = 'none';
+            state.history.forEach(h => {
+                const tr = document.createElement('tr');
+                let b = h.action === 'stay' ? 'log-stay' : (h.action === 'down' ? 'log-back' : 'log-change');
+                const label = h.action === 'stay' ? 'STAY' : (h.action === 'down' ? 'BACK' : 'UP');
+                tr.innerHTML = `<td>${h.dateStr}</td><td>Day ${h.dayNum}</td><td><span class="log-pill ${b}">${label}</span>${h.discard.toFixed(1)}ml</td><td style="font-size:11px;">${h.take || '-'}</td>`;
+                tbody.appendChild(tr);
+            });
         }
-        document.getElementById('logEmpty').style.display = 'none';
-        state.history.forEach(h => {
-            const tr = document.createElement('tr');
-            let b = h.action === 'stay' ? 'log-stay' : (h.action === 'down' ? 'log-back' : 'log-change');
-            const label = h.action === 'stay' ? 'STAY' : (h.action === 'down' ? 'BACK' : 'UP');
-            tr.innerHTML = `<td>${h.dateStr}</td><td>Day ${h.dayNum}</td><td><span class="log-pill ${b}">${label}</span>${h.discard.toFixed(1)}ml</td><td style="font-size:11px;">${h.take || '-'}</td>`;
-            tbody.appendChild(tr);
-        });
-    }
 
-    function renderPhaseList(currentId) {
-        const ps = [
-            {id:0, name:"Phase 1: 導入期", text:"最初の1ヶ月は体を慣らす期間です。基本ペース（3日おき）を守りましょう。"},
-            {id:1, name:"Phase 2: 巡航期(前半)", text:"リズムを作る期間。5％・10％・20％と段階的に減らしていきましょう。"},
-            {id:2, name:"Phase 3: 巡航期(後半)", text:"重要：50％で折り返し地点です。ペースを見直してください。"},
-            {id:3, name:"Phase 4: 着陸期", text:"残り10ml以下。最も慎重さが必要です。ステイを多用しましょう。"}
-        ];
-        const container = document.getElementById('phaseListContainer');
-        container.innerHTML = "";
-        ps.forEach(p => {
-            const div = document.createElement('div');
-            div.className = `phase-card ${p.id === currentId ? 'active' : ''}`;
-            div.innerHTML = `<div class="phase-header"><span class="phase-name">${p.name}</span>${p.id === currentId ? '<span class="phase-tag">現在地</span>' : ''}</div><div class="phase-advice">${p.id === currentId ? getPhaseInfo(state.discard).advice : p.text}</div>`;
-            container.appendChild(div);
-        });
-    }
-
-    // ============================================================
-    // PWAバナー
-    // ============================================================
-    function renderPwaBanner() {
-        const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-        const banner = document.getElementById('pwaBanner');
-        if (!isStandalone && !state.pwaBannerDismissed) {
-            banner.classList.add('visible');
-        } else {
-            banner.classList.remove('visible');
+        function renderPhaseList(currentId) {
+            const ps = [
+                {id:0, name:"Phase 1: 導入期", text:"最初の1ヶ月は体を慣らす期間です。基本ペース（3日おき）を守りましょう。"},
+                {id:1, name:"Phase 2: 巡航期(前半)", text:"リズムを作る期間。5％・10％・20％と段階的に減らしていきましょう。"},
+                {id:2, name:"Phase 3: 巡航期(後半)", text:"重要：50％で折り返し地点です。ペースを『3日〜1週間置き』の範囲で調整してください。"},
+                {id:3, name:"Phase 4: 着陸期", text:"残り10ml以下。最も慎重さが必要です。ステイを多用しましょう。"}
+            ];
+            const container = document.getElementById('phaseListContainer');
+            container.innerHTML = "";
+            ps.forEach(p => {
+                const div = document.createElement('div');
+                div.className = `phase-card ${p.id === currentId ? 'active' : ''}`;
+                div.innerHTML = `<div class="phase-header"><span class="phase-name">${p.name}</span>${p.id === currentId ? '<span class="phase-tag">現在地</span>' : ''}</div><div class="phase-advice">${p.id === currentId ? getPhaseInfo(state.discard).advice : p.text}</div>`;
+                container.appendChild(div);
+            });
         }
-    }
 
-    function closePwaBanner() {
-        state.pwaBannerDismissed = true;
-        document.getElementById('pwaBanner').classList.remove('visible');
-    }
-
-    // ============================================================
-    // バックアップ/リストア
-    // ============================================================
-    function showBackup() {
-        const data = localStorage.getItem(DB_KEY) || '{}';
-        document.getElementById('modalTitle').innerText = '📤 データバックアップ';
-        document.getElementById('modalContent').innerHTML = `
-            <p style="font-size:13px; color:#666; margin-bottom:12px;">以下のテキストを全選択してコピーし、メモ帳などに保存してください。</p>
-            <textarea class="modal-textarea" id="backupText" readonly onclick="this.select()">${data}</textarea>
-            <button class="modal-btn modal-btn-primary" onclick="copyBackup()">📋 コピーする</button>
-            <button class="modal-btn modal-btn-secondary" onclick="closeModal()">閉じる</button>
-        `;
-        document.getElementById('modalOverlay').classList.add('show');
-    }
-
-    function copyBackup() {
-        const text = document.getElementById('backupText').value;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => showToast('✅ コピーしました！'));
-        } else {
-            const ta = document.getElementById('backupText');
-            ta.select(); document.execCommand('copy');
-            showToast('✅ コピーしました！');
+        function changeStartDate(val) { if(val) { state.startDate = new Date(val).getTime(); save(); } }
+        function changeSet(k, d) { 
+            const minVals = { totalMg: 0.1, totalWater: 10, baseStep: 0.1, baseInterval: 1 };
+            state[k] = Math.max(minVals[k] || 0, Math.round((state[k] + d) * 10) / 10); 
+            save(); 
         }
-    }
-
-    function showRestore() {
-        document.getElementById('modalTitle').innerText = '📥 バックアップから復元';
-        document.getElementById('modalContent').innerHTML = `
-            <p style="font-size:13px; color:#666; margin-bottom:12px;">保存したバックアップテキストを貼り付けてください。</p>
-            <textarea class="modal-textarea" id="restoreText" placeholder="バックアップデータをここに貼り付け..."></textarea>
-            <button class="modal-btn modal-btn-red" onclick="doRestore()">⚠️ 復元する（現在のデータは上書きされます）</button>
-            <button class="modal-btn modal-btn-secondary" onclick="closeModal()">キャンセル</button>
-        `;
-        document.getElementById('modalOverlay').classList.add('show');
-    }
-
-    function doRestore() {
-        try {
-            const text = document.getElementById('restoreText').value.trim();
-            const parsed = JSON.parse(text);
-            if (!parsed.startDate) throw new Error('invalid');
-            localStorage.setItem(DB_KEY, text);
-            state = parsed;
-            if(!state.history) state.history = [];
-            closeModal();
-            showToast('✅ 復元しました！');
+        function fullReset() { if(confirm("全てのデータを消去し、Day 1に戻ります。よろしいですか？")) { localStorage.removeItem(DB_KEY); location.reload(); } }
+        
+        function debugTimeTravel(days) {
+            if (days === 0) { state.debugOffsetDays = 0; showToast("リセット"); }
+            else { state.debugOffsetDays = (state.debugOffsetDays || 0) + days; showToast(`仮想日付: +${state.debugOffsetDays}日`); }
             render();
-        } catch(e) {
-            showToast('❌ データが無効です');
         }
-    }
 
-    function closeModal(e) {
-        if (!e || e.target === document.getElementById('modalOverlay')) {
-            document.getElementById('modalOverlay').classList.remove('show');
+        function switchTab(id, el) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-'+id).classList.add('active');
+            if(id !== 'log') {
+                document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+                const tabEl = el || document.getElementById('tab-'+id);
+                if(tabEl) tabEl.classList.add('active');
+            }
+            document.getElementById('fixedActions').style.display = (id === 'home' ? 'grid' : 'none');
         }
-    }
+        function openLogScreen() { switchTab('log', null); }
+        function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
-    // ============================================================
-    // 設定変更
-    // ============================================================
-    function changeStartDate(val) {
-        if(val) { state.startDate = new Date(val).getTime(); save(); }
-    }
-
-    function changeSet(k, d) {
-        const minVals = { totalMg: 0.1, totalWater: 10, baseStep: 0.1, baseInterval: 1 };
-        state[k] = Math.max(minVals[k] || 0, Math.round((state[k] + d) * 10) / 10);
-        save();
-    }
-
-    function fullReset() {
-        if(confirm("全てのデータを消去し、Day 1に戻ります。本当によろしいですか？")) {
-            localStorage.removeItem(DB_KEY);
-            location.reload();
+        // バックアップ機能
+        function exportData() {
+            const data = JSON.stringify(state);
+            document.getElementById('backupText').value = data;
+            document.getElementById('backupActionBtn').style.display = 'none';
+            document.getElementById('backupModal').style.display = 'flex';
+            document.getElementById('backupText').select();
+            document.execCommand('copy');
+            showToast("データをコピーしました");
         }
-    }
-
-    function debugTimeTravel(days) {
-        if (days === 0) {
-            state.debugOffsetDays = 0;
-            showToast("リセット");
-        } else {
-            state.debugOffsetDays = (state.debugOffsetDays || 0) + days;
-            showToast(`仮想日付: +${state.debugOffsetDays}日`);
+        function importData() {
+            document.getElementById('backupText').value = "";
+            document.getElementById('backupActionBtn').style.display = 'block';
+            document.getElementById('backupActionBtn').onclick = execImport;
+            document.getElementById('backupModal').style.display = 'flex';
         }
-        render();
-    }
-
-    // ============================================================
-    // 画面切替
-    // ============================================================
-    function switchTab(id, el) {
-        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-        document.getElementById('screen-'+id).classList.add('active');
-        if(id !== 'log') {
-            document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-            const tabEl = el || document.getElementById('tab-'+id);
-            if(tabEl) tabEl.classList.add('active');
-        }
-        document.getElementById('fixedActions').style.display = (id === 'home' ? 'grid' : 'none');
-    }
-
-    function showToast(m) {
-        const t = document.getElementById('toast');
-        t.innerText = m;
-        t.classList.add('show');
-        setTimeout(() => t.classList.remove('show'), 2200);
-    }
-
-    // ============================================================
-    // Service Worker 登録（オフライン対応）
-    // ============================================================
-    if ('serviceWorker' in navigator) {
-        // インラインService WorkerをBlob URLで登録
-        const swCode = `
-            const CACHE_NAME = 'genka-mgr-v14';
-            self.addEventListener('install', (e) => {
-                self.skipWaiting();
-            });
-            self.addEventListener('activate', (e) => {
-                e.waitUntil(
-                    caches.keys().then(keys => Promise.all(
-                        keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
-                    ))
-                );
-            });
-            self.addEventListener('fetch', (e) => {
-                // ナビゲーションリクエストはキャッシュ優先
-                if (e.request.mode === 'navigate') {
-                    e.respondWith(
-                        caches.match(e.request).then(r => r || fetch(e.request).then(resp => {
-                            return caches.open(CACHE_NAME).then(c => {
-                                c.put(e.request, resp.clone()); return resp;
-                            });
-                        }))
-                    );
+        function execImport() {
+            try {
+                const val = document.getElementById('backupText').value;
+                const parsed = JSON.parse(val);
+                if(parsed.startDate) {
+                    state = parsed;
+                    save();
+                    closeBackupModal();
+                    showToast("復元しました");
                 }
-            });
-        `;
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        const swUrl = URL.createObjectURL(blob);
-        navigator.serviceWorker.register(swUrl).catch(() => {
-            // Blob URL SWが失敗した場合は無視（GitHub Pagesなどでは同じオリジンのSWが必要）
-        });
-    }
+            } catch(e) {
+                showToast("データが無効です");
+            }
+        }
+        function closeBackupModal() {
+            document.getElementById('backupModal').style.display = 'none';
+        }
 
-    // ============================================================
-    // 初期化
-    // ============================================================
-    render();
-</script>
-```
-
+        render();
+    </script>
 </body>
 </html>
