@@ -7,10 +7,8 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="減薬マネージャー">
     <title>減薬マネージャー</title>
-　<link rel="icon" href="favicon.ico" sizes="any">
- <link rel="icon" href="icon-192.png" type="image/png">
- <link rel="apple-touch-icon" href="apple-touch-icon.png">
- <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://mashiroqun.github.io/-/icon.png">
+    <link rel="icon" href="icon.png?v=2">
 
     <style>
         :root {
@@ -96,7 +94,7 @@
         .check-icon { width: 16px; height: 16px; border-radius: 4px; border: 2px solid #C7C7CC; background: white; }
         .check-btn.checked .check-icon { background: var(--color-green); border-color: var(--color-green); }
         .check-label { font-size: 13px; font-weight: 700; }
-        .check-time { font-size: 10px; color: #888; height: 12px; }
+        .check-time { font-size: 11px; color: #888; font-variant-numeric: tabular-nums; height: 14px; margin-top: 2px; }
 
         .prediction-area { text-align: center; margin-top: 20px; font-size: 13px; color: #888; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .pred-days { font-weight: 700; color: #555; font-size: 15px; }
@@ -111,7 +109,7 @@
             display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; 
             padding: 0 20px 10px 20px; z-index: 900; pointer-events: none; 
         }
-        .action-btn { pointer-events: auto; border: none; border-radius: 20px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.1s; }
+        .action-btn { pointer-events: auto; border: none; border-radius: 20px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.1s; cursor: pointer; }
         .action-btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn-red { background: rgba(255, 59, 48, 0.15); color: var(--color-red); border: 1px solid rgba(255,59,48,0.1); }
         .btn-orange { background: rgba(255, 149, 0, 0.15); color: var(--color-orange); border: 1px solid rgba(255,149,0,0.1); }
@@ -138,14 +136,13 @@
         .step-val { width: 70px; text-align: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
         .date-input { border: none; background: #E5E5EA; padding: 8px 12px; border-radius: 8px; font-size: 16px; font-weight: 600; color: var(--color-blue); font-family: inherit; }
         
-        .log-btn { width: 100%; padding: 18px; background: #F0F8FF; color: var(--color-blue); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 12px; }
-        .reset-btn { width: 100%; padding: 18px; background: white; color: var(--color-red); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 30px; }
-        .backup-btn { width: 100%; padding: 18px; background: #F9F9F9; color: #555; font-weight: 700; border: 1px solid #ddd; border-radius: 16px; font-size: 15px; margin-top: 10px; cursor: pointer; }
+        .log-btn { width: 100%; padding: 18px; background: #F0F8FF; color: var(--color-blue); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 12px; cursor: pointer; }
+        .reset-btn { width: 100%; padding: 18px; background: white; color: var(--color-red); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 30px; cursor: pointer; }
+        .backup-btn { width: 100%; padding: 18px; background: #F9F9F9; color: #555; font-weight: 700; border: 1px solid #ddd; border-radius: 16px; font-size: 14px; margin-top: 10px; cursor: pointer; }
 
         .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .log-table th { text-align: left; color: var(--text-secondary); padding: 8px; border-bottom: 1px solid #ddd; }
         .log-table td { padding: 12px 8px; border-bottom: 1px solid #eee; font-variant-numeric: tabular-nums; vertical-align: middle; }
-        .log-date { font-weight: 700; color: #333; }
         .log-pill { font-size: 10px; padding: 2px 6px; border-radius: 4px; font-weight: 600; margin-right: 4px; }
         .log-stay { color: var(--color-orange); background: rgba(255, 149, 0, 0.1); }
         .log-change { color: var(--color-blue); background: rgba(0, 122, 255, 0.1); }
@@ -164,16 +161,12 @@
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; align-items: center; justify-content: center; }
         .modal-overlay.show { display: flex; }
         .modal-card { background: white; width: 90%; max-width: 400px; padding: 24px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
-        .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
+        .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
         .modal-textarea { width: 100%; height: 120px; background: #F2F2F7; border: none; border-radius: 12px; padding: 12px; font-family: monospace; font-size: 12px; margin-bottom: 16px; resize: none; }
         .modal-actions { display: flex; gap: 10px; }
         .modal-btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; }
         .modal-btn-primary { background: var(--color-blue); color: white; }
         .modal-btn-secondary { background: #E5E5EA; color: #333; }
-
-        .debug-zone { margin-top: 40px; padding: 20px; background: #333; border-radius: 16px; color: white; text-align: center; }
-        .debug-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .debug-btn { background: #555; color: white; border: none; padding: 10px; border-radius: 8px; font-size: 12px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -300,16 +293,12 @@
         <div class="card" style="margin-top:16px;">
             <div class="card-header">⚠️ データ保護（重要）</div>
             <div style="font-size:13px; color:#666; margin-bottom:12px; line-height:1.6;">データの消失を防ぐため、定期的にバックアップを取ることを推奨します。</div>
-            <button class="backup-btn" onclick="exportData()">📤 データをバックアップ（コピー）</button>
-            <button class="backup-btn" onclick="importData()">📥 バックアップから復元</button>
+            <button class="backup-btn" onclick="exportData()">📤 データをバックアップ（ファイル保存）</button>
+            <button class="backup-btn" onclick="importData()">📥 テキストからデータを復元</button>
         </div>
 
         <button class="reset-btn" onclick="fullReset()">データを消去してリセット</button>
-        <div class="debug-zone">
-            <div style="font-size:12px; font-weight:700; color:#AAA;">🧪 開発者メニュー (Debug)</div>
-            <div class="debug-grid"><button class="debug-btn" onclick="debugTimeTravel(1)">＋1日進める</button><button class="debug-btn" onclick="debugTimeTravel(0)">リセット</button></div>
-        </div>
-        <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v15.1</div>
+        <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v16.0</div>
     </div>
 
     <div id="screen-log" class="screen">
@@ -319,7 +308,7 @@
         </div>
         <div class="card" style="padding:0; overflow:hidden;">
             <table class="log-table">
-                <thead><tr><th>日付</th><th>Day</th><th>記録</th><th>服用</th></tr></thead>
+                <thead><tr><th>日付</th><th>Day</th><th>記録</th><th>服用時間</th></tr></thead>
                 <tbody id="logTableBody"></tbody>
             </table>
             <div id="logEmpty" style="padding:20px; text-align:center; color:#999;">記録はありません</div>
@@ -343,19 +332,20 @@
     
     <div id="toast" class="toast">メッセージ</div>
 
-    <div class="modal-overlay" id="backupModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;">
-        <div class="modal-card" style="background:white; width:90%; max-width:400px; padding:20px; border-radius:16px;">
-            <h3 style="margin-top:0;">データバックアップ</h3>
-            <textarea id="backupText" style="width:100%; height:100px; border:1px solid #ddd; border-radius:8px; padding:8px; font-size:12px;"></textarea>
-            <div style="display:flex; gap:10px; margin-top:10px;">
-                <button onclick="closeBackupModal()" style="flex:1; padding:10px; border:none; background:#eee; border-radius:8px;">閉じる</button>
-                <button id="backupActionBtn" onclick="execImport()" style="flex:1; padding:10px; border:none; background:var(--color-blue); color:white; border-radius:8px;">実行</button>
+    <div class="modal-overlay" id="backupModal">
+        <div class="modal-card">
+            <h3 class="modal-title">テキストから復元</h3>
+            <p style="font-size:12px; color:#666; margin-bottom:10px; line-height:1.4;">以前のアプリでコピーしたバックアップテキストを貼り付けてください。</p>
+            <textarea id="backupText" class="modal-textarea" placeholder='{"startDate": ... }'></textarea>
+            <div class="modal-actions">
+                <button class="modal-btn modal-btn-secondary" onclick="closeBackupModal()">キャンセル</button>
+                <button class="modal-btn modal-btn-primary" onclick="execImport()">復元を実行</button>
             </div>
         </div>
     </div>
 
     <script>
-        const DB_KEY = 'medMgr_v15_final';
+        const DB_KEY = 'medMgr_v15_final'; // DBキーは互換性維持のためそのまま
         const defaultState = {
             startDate: Date.now(),      
             lastChangeDate: Date.now(), 
@@ -366,18 +356,14 @@
             baseStep: 0.2,
             baseInterval: 3,
             checks: { date: "", morning: false, night: false, timeM: "", timeN: "" },
-            history: [],
-            debugOffsetDays: 0
+            history: []
         };
 
         let state = JSON.parse(localStorage.getItem(DB_KEY)) || defaultState;
         if(!state.history) state.history = [];
-        if(state.debugOffsetDays === undefined) state.debugOffsetDays = 0;
 
         function getNow() {
-            const d = new Date();
-            d.setDate(d.getDate() + (state.debugOffsetDays || 0));
-            return d;
+            return new Date();
         }
 
         function getDaysDiff(timestamp) {
@@ -395,22 +381,41 @@
         }
 
         function save() {
-            const toSave = JSON.parse(JSON.stringify(state));
-            toSave.debugOffsetDays = 0;
-            localStorage.setItem(DB_KEY, JSON.stringify(toSave));
+            localStorage.setItem(DB_KEY, JSON.stringify(state));
             render();
         }
 
+        // ログ保存の賢いロジック（actionTypeが空ならステイ扱い。既にUPなどがあれば引き継ぐ）
         function addToHistory(actionType, discardVal) {
             const now = getNow();
             const todayStr = `${now.getMonth()+1}/${now.getDate()}`;
             const totalDays = getDaysDiff(state.startDate);
-            let takeStatus = (state.checks.morning ? "朝" : "") + (state.checks.morning && state.checks.night ? "・" : "") + (state.checks.night ? "夜" : "");
-            if(takeStatus === "") takeStatus = "－";
-            const entry = { dateStr: todayStr, dayNum: totalDays, action: actionType, discard: discardVal, take: takeStatus };
-            const idx = state.history.findIndex(h => h.dateStr === todayStr);
-            if(idx !== -1) state.history.splice(idx, 1);
-            state.history.unshift(entry);
+
+            const existingIdx = state.history.findIndex(h => h.dateStr === todayStr);
+            let finalAction = actionType;
+
+            // チェックボタン等から呼ばれた場合（actionTypeの指定なし）
+            if (!actionType) {
+                if (existingIdx !== -1) {
+                    // すでに今日の記録（UP/BACK等）があればそれを維持
+                    finalAction = state.history[existingIdx].action;
+                } else {
+                    // 今日初めての記録がチェックボタンなら「STAY（ステイ）」扱いにする
+                    finalAction = 'stay';
+                }
+            }
+
+            // 服用時間の文字列作成
+            let takeStatus = "";
+            if (state.checks.morning && state.checks.timeM) takeStatus += `朝 ${state.checks.timeM}`;
+            if (state.checks.night && state.checks.timeN) takeStatus += (takeStatus ? "<br>" : "") + `夜 ${state.checks.timeN}`;
+            if (!takeStatus) takeStatus = "－";
+
+            const entry = { dateStr: todayStr, dayNum: totalDays, action: finalAction, discard: discardVal, take: takeStatus };
+            
+            // 上書きか新規追加か
+            if(existingIdx !== -1) state.history[existingIdx] = entry;
+            else state.history.unshift(entry);
         }
 
         function getPhaseInfo(discard) {
@@ -519,7 +524,8 @@
 
         function toggleCheck(type) {
             const now = new Date();
-            const tStr = `${now.getHours()}:${('0'+now.getMinutes()).slice(-2)}`;
+            // 例: 08:05 のように2桁で0埋めする
+            const tStr = `${('0'+now.getHours()).slice(-2)}:${('0'+now.getMinutes()).slice(-2)}`;
             if(type === 'morning') {
                 state.checks.morning = !state.checks.morning;
                 state.checks.timeM = state.checks.morning ? tStr : "";
@@ -527,6 +533,8 @@
                 state.checks.night = !state.checks.night;
                 state.checks.timeN = state.checks.night ? tStr : "";
             }
+            // チェックを押しただけの場合は、明示的なアクション指定なし(null)で記録
+            addToHistory(null, state.discard);
             save();
         }
 
@@ -542,7 +550,7 @@
                 const tr = document.createElement('tr');
                 let b = h.action === 'stay' ? 'log-stay' : (h.action === 'down' ? 'log-back' : 'log-change');
                 const label = h.action === 'stay' ? 'STAY' : (h.action === 'down' ? 'BACK' : 'UP');
-                tr.innerHTML = `<td>${h.dateStr}</td><td>Day ${h.dayNum}</td><td><span class="log-pill ${b}">${label}</span>${h.discard.toFixed(1)}ml</td><td style="font-size:11px;">${h.take || '-'}</td>`;
+                tr.innerHTML = `<td>${h.dateStr}</td><td>Day ${h.dayNum}</td><td><span class="log-pill ${b}">${label}</span>${h.discard.toFixed(1)}ml</td><td style="font-size:11px; line-height:1.4;">${h.take || '-'}</td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -571,12 +579,6 @@
             save(); 
         }
         function fullReset() { if(confirm("全てのデータを消去し、Day 1に戻ります。よろしいですか？")) { localStorage.removeItem(DB_KEY); location.reload(); } }
-        
-        function debugTimeTravel(days) {
-            if (days === 0) { state.debugOffsetDays = 0; showToast("リセット"); }
-            else { state.debugOffsetDays = (state.debugOffsetDays || 0) + days; showToast(`仮想日付: +${state.debugOffsetDays}日`); }
-            render();
-        }
 
         function switchTab(id, el) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -588,39 +590,52 @@
             }
             document.getElementById('fixedActions').style.display = (id === 'home' ? 'grid' : 'none');
         }
-        function openLogScreen() { switchTab('log', null); }
         function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
-        // バックアップ機能
+        // JSONファイルとしてバックアップダウンロード
         function exportData() {
             const data = JSON.stringify(state);
-            document.getElementById('backupText').value = data;
-            document.getElementById('backupActionBtn').style.display = 'none';
-            document.getElementById('backupModal').style.display = 'flex';
-            document.getElementById('backupText').select();
-            document.execCommand('copy');
-            showToast("データをコピーしました");
+            const blob = new Blob([data], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            
+            // ファイル名: 減薬マネージャーバックアップ_YYYYMMDD.json
+            const d = new Date();
+            const dateStr = `${d.getFullYear()}${('0'+(d.getMonth()+1)).slice(-2)}${('0'+d.getDate()).slice(-2)}`;
+            a.download = `減薬マネージャーバックアップ_${dateStr}.json`;
+            
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast("バックアップファイルを保存しました");
         }
+
+        // テキストからのインポートモーダル表示
         function importData() {
             document.getElementById('backupText').value = "";
-            document.getElementById('backupActionBtn').style.display = 'block';
-            document.getElementById('backupActionBtn').onclick = execImport;
             document.getElementById('backupModal').style.display = 'flex';
         }
+
+        // テキストから復元実行
         function execImport() {
             try {
                 const val = document.getElementById('backupText').value;
                 const parsed = JSON.parse(val);
                 if(parsed.startDate) {
                     state = parsed;
+                    // 引き継ぎ後、不要なデバッグデータを念のため除去
+                    if(state.debugOffsetDays !== undefined) delete state.debugOffsetDays;
                     save();
                     closeBackupModal();
-                    showToast("復元しました");
+                    showToast("データを復元しました");
+                } else {
+                    showToast("データ形式が正しくありません");
                 }
             } catch(e) {
-                showToast("データが無効です");
+                showToast("無効なテキストデータです");
             }
         }
+
         function closeBackupModal() {
             document.getElementById('backupModal').style.display = 'none';
         }
