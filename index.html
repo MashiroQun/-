@@ -138,7 +138,9 @@
         
         .log-btn { width: 100%; padding: 18px; background: #F0F8FF; color: var(--color-blue); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 12px; cursor: pointer; }
         .reset-btn { width: 100%; padding: 18px; background: white; color: var(--color-red); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 30px; cursor: pointer; }
-        .backup-btn { width: 100%; padding: 18px; background: #F9F9F9; color: #555; font-weight: 700; border: 1px solid #ddd; border-radius: 16px; font-size: 14px; margin-top: 10px; cursor: pointer; }
+        .backup-btn { width: 100%; padding: 16px; background: #F9F9F9; color: #333; font-weight: 700; border: 1px solid #ddd; border-radius: 16px; font-size: 14px; margin-top: 10px; cursor: pointer; }
+        .backup-btn-primary { background: #F0F8FF; color: var(--color-blue); border-color: rgba(0, 122, 255, 0.3); }
+        .backup-btn-sub { background: transparent; border: 1px dashed #ccc; color: #888; font-size: 12px; padding: 12px; margin-top: 20px; }
 
         .log-table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .log-table th { text-align: left; color: var(--text-secondary); padding: 8px; border-bottom: 1px solid #ddd; }
@@ -293,12 +295,17 @@
         <div class="card" style="margin-top:16px;">
             <div class="card-header">⚠️ データ保護（重要）</div>
             <div style="font-size:13px; color:#666; margin-bottom:12px; line-height:1.6;">データの消失を防ぐため、定期的にバックアップを取ることを推奨します。</div>
-            <button class="backup-btn" onclick="exportData()">📤 データをバックアップ（ファイル保存）</button>
-            <button class="backup-btn" onclick="importData()">📥 テキストからデータを復元</button>
+            
+            <button class="backup-btn" onclick="exportData()">📤 バックアップを保存（ファイル）</button>
+            
+            <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importFromFile(event)">
+            <button class="backup-btn backup-btn-primary" onclick="document.getElementById('fileInput').click()">📥 ファイルからデータを復元</button>
+            
+            <button class="backup-btn backup-btn-sub" onclick="importData()">📋 旧バージョンのテキストから復元</button>
         </div>
 
         <button class="reset-btn" onclick="fullReset()">データを消去してリセット</button>
-        <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v16.0</div>
+        <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v16.1</div>
     </div>
 
     <div id="screen-log" class="screen">
@@ -345,7 +352,7 @@
     </div>
 
     <script>
-        const DB_KEY = 'medMgr_v15_final'; // DBキーは互換性維持のためそのまま
+        const DB_KEY = 'medMgr_v15_final'; 
         const defaultState = {
             startDate: Date.now(),      
             lastChangeDate: Date.now(), 
@@ -385,7 +392,6 @@
             render();
         }
 
-        // ログ保存の賢いロジック（actionTypeが空ならステイ扱い。既にUPなどがあれば引き継ぐ）
         function addToHistory(actionType, discardVal) {
             const now = getNow();
             const todayStr = `${now.getMonth()+1}/${now.getDate()}`;
@@ -394,18 +400,14 @@
             const existingIdx = state.history.findIndex(h => h.dateStr === todayStr);
             let finalAction = actionType;
 
-            // チェックボタン等から呼ばれた場合（actionTypeの指定なし）
             if (!actionType) {
                 if (existingIdx !== -1) {
-                    // すでに今日の記録（UP/BACK等）があればそれを維持
                     finalAction = state.history[existingIdx].action;
                 } else {
-                    // 今日初めての記録がチェックボタンなら「STAY（ステイ）」扱いにする
                     finalAction = 'stay';
                 }
             }
 
-            // 服用時間の文字列作成
             let takeStatus = "";
             if (state.checks.morning && state.checks.timeM) takeStatus += `朝 ${state.checks.timeM}`;
             if (state.checks.night && state.checks.timeN) takeStatus += (takeStatus ? "<br>" : "") + `夜 ${state.checks.timeN}`;
@@ -413,7 +415,6 @@
 
             const entry = { dateStr: todayStr, dayNum: totalDays, action: finalAction, discard: discardVal, take: takeStatus };
             
-            // 上書きか新規追加か
             if(existingIdx !== -1) state.history[existingIdx] = entry;
             else state.history.unshift(entry);
         }
@@ -524,7 +525,6 @@
 
         function toggleCheck(type) {
             const now = new Date();
-            // 例: 08:05 のように2桁で0埋めする
             const tStr = `${('0'+now.getHours()).slice(-2)}:${('0'+now.getMinutes()).slice(-2)}`;
             if(type === 'morning') {
                 state.checks.morning = !state.checks.morning;
@@ -533,7 +533,6 @@
                 state.checks.night = !state.checks.night;
                 state.checks.timeN = state.checks.night ? tStr : "";
             }
-            // チェックを押しただけの場合は、明示的なアクション指定なし(null)で記録
             addToHistory(null, state.discard);
             save();
         }
@@ -599,18 +598,41 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            
-            // ファイル名: 減薬マネージャーバックアップ_YYYYMMDD.json
             const d = new Date();
             const dateStr = `${d.getFullYear()}${('0'+(d.getMonth()+1)).slice(-2)}${('0'+d.getDate()).slice(-2)}`;
             a.download = `減薬マネージャーバックアップ_${dateStr}.json`;
-            
             a.click();
             URL.revokeObjectURL(url);
             showToast("バックアップファイルを保存しました");
         }
 
-        // テキストからのインポートモーダル表示
+        // 新機能：JSONファイルから復元する処理
+        function importFromFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if(parsed.startDate) {
+                        state = parsed;
+                        if(state.debugOffsetDays !== undefined) delete state.debugOffsetDays;
+                        save();
+                        showToast("ファイルからデータを復元しました");
+                    } else {
+                        showToast("データ形式が正しくありません");
+                    }
+                } catch(err) {
+                    showToast("無効なファイルです");
+                }
+                // 連続で同じファイルを選べるように入力をリセット
+                event.target.value = "";
+            };
+            reader.readAsText(file);
+        }
+
+        // テキストからのインポートモーダル表示（旧版用）
         function importData() {
             document.getElementById('backupText').value = "";
             document.getElementById('backupModal').style.display = 'flex';
@@ -623,11 +645,10 @@
                 const parsed = JSON.parse(val);
                 if(parsed.startDate) {
                     state = parsed;
-                    // 引き継ぎ後、不要なデバッグデータを念のため除去
                     if(state.debugOffsetDays !== undefined) delete state.debugOffsetDays;
                     save();
                     closeBackupModal();
-                    showToast("データを復元しました");
+                    showToast("テキストから復元しました");
                 } else {
                     showToast("データ形式が正しくありません");
                 }
