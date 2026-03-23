@@ -11,6 +11,7 @@
     <link rel="icon" href="icon.png?v=2">
 
     <style>
+        /* 既存のCSSをそのまま保持しています */
         :root {
             --bg-color: #F2F2F7;
             --card-bg: #FFFFFF;
@@ -36,29 +37,22 @@
             display: flex; flex-direction: column;
         }
 
-        /* --- 画面管理 --- */
         .screen {
             display: none; flex: 1; flex-direction: column;
             overflow-y: auto; -webkit-overflow-scrolling: touch;
             padding: 20px;
             padding-bottom: calc(var(--action-bar-height) + 40px);
         }
-        .screen.active { display: flex; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .screen.active { display: flex; animation: fadeIn 0.25s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: translateX(0); } }
 
-        /* --- ヘッダー --- */
-        .app-header {
-            display: flex; align-items: baseline; justify-content: space-between;
-            margin-bottom: 12px; padding: 0 8px;
-        }
+        .app-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; padding: 0 8px; }
         .header-day { font-size: 32px; font-weight: 800; color: var(--text-primary); letter-spacing: -1px; }
         .header-date { font-size: 15px; font-weight: 600; color: var(--text-secondary); }
 
-        /* --- カード共通 --- */
         .card { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
         .card-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; }
 
-        /* --- ホーム画面レイアウト --- */
         .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 0 10px; }
         .intake-info { display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
         .intake-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
@@ -99,16 +93,7 @@
         .prediction-area { text-align: center; margin-top: 20px; font-size: 13px; color: #888; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .pred-days { font-weight: 700; color: #555; font-size: 15px; }
 
-        /* 固定アクションボタン */
-        .fixed-actions { 
-            position: fixed; 
-            bottom: calc(var(--tab-bar-height) + 20px); 
-            left: 0; right: 0; 
-            height: var(--action-bar-height); 
-            background: linear-gradient(to top, rgba(242,242,247,1) 50%, rgba(242,242,247,0)); 
-            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; 
-            padding: 0 20px 10px 20px; z-index: 900; pointer-events: none; 
-        }
+        .fixed-actions { position: fixed; bottom: calc(var(--tab-bar-height) + 20px); left: 0; right: 0; height: var(--action-bar-height); background: linear-gradient(to top, rgba(242,242,247,1) 50%, rgba(242,242,247,0)); display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; padding: 0 20px 10px 20px; z-index: 900; pointer-events: none; }
         .action-btn { pointer-events: auto; border: none; border-radius: 20px; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); transition: transform 0.1s; cursor: pointer; }
         .action-btn:active { transform: scale(0.96); opacity: 0.9; }
         .btn-red { background: rgba(255, 59, 48, 0.15); color: var(--color-red); border: 1px solid rgba(255,59,48,0.1); }
@@ -117,7 +102,6 @@
         .btn-icon { width: 28px; height: 28px; stroke-width: 2.5; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
         .btn-label { font-size: 12px; font-weight: 700; }
 
-        /* --- ガイド画面 --- */
         .guide-box { background: #FFF; padding: 20px; border-radius: 20px; margin-bottom: 20px; border-left: 4px solid var(--color-green); box-shadow: 0 2px 8px rgba(0,0,0,0.02); }
         .guide-title { font-weight: 800; font-size: 15px; margin-bottom: 8px; color: var(--color-green); }
         .guide-text { font-size: 13px; line-height: 1.6; color: #333; }
@@ -129,7 +113,6 @@
         .phase-tag { font-size: 11px; font-weight: 800; background: var(--color-blue); color: white; padding: 2px 8px; border-radius: 10px; }
         .phase-advice { font-size: 13px; color: #444; line-height: 1.5; }
 
-        /* --- 設定・ログ --- */
         .setting-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #eee; }
         .stepper { display: flex; align-items: center; background: #E5E5EA; border-radius: 12px; padding: 4px; }
         .step-btn { width: 44px; height: 40px; border: none; background: white; border-radius: 10px; font-size: 22px; font-weight: 600; color: var(--color-blue); cursor: pointer; }
@@ -150,16 +133,14 @@
         .log-change { color: var(--color-blue); background: rgba(0, 122, 255, 0.1); }
         .log-back { color: var(--color-red); background: rgba(255, 59, 48, 0.1); }
 
-        /* --- タブバー --- */
         .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: var(--tab-bar-height); background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(0,0,0,0.1); display: grid; grid-template-columns: 1fr 1fr 1fr; padding-bottom: env(safe-area-inset-bottom); z-index: 1000; }
-        .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #AAA; gap: 5px; cursor: pointer; }
+        .tab-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #AAA; gap: 5px; cursor: pointer; transition: color 0.2s; }
         .tab-item.active { color: var(--color-blue); }
         .tab-icon { width: 26px; height: 26px; stroke-width: 2; fill: none; stroke: currentColor; }
 
         .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-weight: 600; z-index: 2000; transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .toast.show { transform: translateX(-50%) translateY(0); }
 
-        /* バックアップモーダル */
         .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 3000; display: none; align-items: center; justify-content: center; }
         .modal-overlay.show { display: flex; }
         .modal-card { background: white; width: 90%; max-width: 400px; padding: 24px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); display: flex; flex-direction: column; }
@@ -305,7 +286,7 @@
         </div>
 
         <button class="reset-btn" onclick="fullReset()">データを消去してリセット</button>
-        <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v16.1</div>
+        <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v16.2</div>
     </div>
 
     <div id="screen-log" class="screen">
@@ -369,9 +350,7 @@
         let state = JSON.parse(localStorage.getItem(DB_KEY)) || defaultState;
         if(!state.history) state.history = [];
 
-        function getNow() {
-            return new Date();
-        }
+        function getNow() { return new Date(); }
 
         function getDaysDiff(timestamp) {
             const now = getNow(); const target = new Date(timestamp);
@@ -396,16 +375,12 @@
             const now = getNow();
             const todayStr = `${now.getMonth()+1}/${now.getDate()}`;
             const totalDays = getDaysDiff(state.startDate);
-
             const existingIdx = state.history.findIndex(h => h.dateStr === todayStr);
             let finalAction = actionType;
 
             if (!actionType) {
-                if (existingIdx !== -1) {
-                    finalAction = state.history[existingIdx].action;
-                } else {
-                    finalAction = 'stay';
-                }
+                if (existingIdx !== -1) finalAction = state.history[existingIdx].action;
+                else finalAction = 'stay';
             }
 
             let takeStatus = "";
@@ -414,7 +389,6 @@
             if (!takeStatus) takeStatus = "－";
 
             const entry = { dateStr: todayStr, dayNum: totalDays, action: finalAction, discard: discardVal, take: takeStatus };
-            
             if(existingIdx !== -1) state.history[existingIdx] = entry;
             else state.history.unshift(entry);
         }
@@ -473,7 +447,7 @@
             document.getElementById('disp_baseInterval').innerText = state.baseInterval;
 
             renderPhaseList(phase.id);
-            renderLog();
+            // ※改善案3：ここではrenderLog()を呼ばないことで通常動作を爆速化
         }
 
         function getStatus() {
@@ -484,11 +458,17 @@
             return { title: "安定期間", desc: `${currentDays}日目`, sub: `/ ${standard}日`, ready: false, day: totalDays };
         }
 
+        // ※改善案1：ループ処理を数式に変更して計算を高速化
         function calculatePrediction() {
-            let d = state.discard; let days = 0;
-            if(state.baseStep <= 0) return { days: "---", date: "--/--" };
-            while(d < state.totalWater && days < 5000) { d += state.baseStep; days += state.baseInterval; }
-            const dt = getNow(); dt.setDate(dt.getDate() + days);
+            if (state.baseStep <= 0) return { days: "---", date: "--/--" };
+            const remaining = state.totalWater - state.discard;
+            if (remaining <= 0) return { days: 0, date: "完了済み" };
+            
+            const steps = Math.ceil(remaining / state.baseStep);
+            const days = steps * state.baseInterval;
+            
+            const dt = getNow(); 
+            dt.setDate(dt.getDate() + days);
             return { days: days, date: `${dt.getFullYear()}/${dt.getMonth()+1}/${dt.getDate()} 完了` };
         }
 
@@ -537,21 +517,23 @@
             save();
         }
 
+        // ※改善案2：DOMの都度追加をやめて、文字列で一括流し込み（爆速化）
         function renderLog() {
             const tbody = document.getElementById('logTableBody');
-            tbody.innerHTML = "";
             if(!state.history.length) {
                 document.getElementById('logEmpty').style.display = 'block';
+                tbody.innerHTML = "";
                 return;
             }
             document.getElementById('logEmpty').style.display = 'none';
+            
+            let htmlString = "";
             state.history.forEach(h => {
-                const tr = document.createElement('tr');
                 let b = h.action === 'stay' ? 'log-stay' : (h.action === 'down' ? 'log-back' : 'log-change');
                 const label = h.action === 'stay' ? 'STAY' : (h.action === 'down' ? 'BACK' : 'UP');
-                tr.innerHTML = `<td>${h.dateStr}</td><td>Day ${h.dayNum}</td><td><span class="log-pill ${b}">${label}</span>${h.discard.toFixed(1)}ml</td><td style="font-size:11px; line-height:1.4;">${h.take || '-'}</td>`;
-                tbody.appendChild(tr);
+                htmlString += `<tr><td>${h.dateStr}</td><td>Day ${h.dayNum}</td><td><span class="log-pill ${b}">${label}</span>${h.discard.toFixed(1)}ml</td><td style="font-size:11px; line-height:1.4;">${h.take || '-'}</td></tr>`;
             });
+            tbody.innerHTML = htmlString;
         }
 
         function renderPhaseList(currentId) {
@@ -582,16 +564,20 @@
         function switchTab(id, el) {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('screen-'+id).classList.add('active');
+            
             if(id !== 'log') {
                 document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
                 const tabEl = el || document.getElementById('tab-'+id);
                 if(tabEl) tabEl.classList.add('active');
+            } else {
+                // ※改善案3：ログ画面が開かれた時だけ描画を実行
+                renderLog();
             }
+            
             document.getElementById('fixedActions').style.display = (id === 'home' ? 'grid' : 'none');
         }
         function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2000); }
 
-        // JSONファイルとしてバックアップダウンロード
         function exportData() {
             const data = JSON.stringify(state);
             const blob = new Blob([data], {type: 'application/json'});
@@ -606,61 +592,99 @@
             showToast("バックアップファイルを保存しました");
         }
 
-        // 新機能：JSONファイルから復元する処理
         function importFromFile(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const parsed = JSON.parse(e.target.result);
                     if(parsed.startDate) {
                         state = parsed;
-                        if(state.debugOffsetDays !== undefined) delete state.debugOffsetDays;
                         save();
                         showToast("ファイルからデータを復元しました");
-                    } else {
-                        showToast("データ形式が正しくありません");
-                    }
-                } catch(err) {
-                    showToast("無効なファイルです");
-                }
-                // 連続で同じファイルを選べるように入力をリセット
+                    } else { showToast("データ形式が正しくありません"); }
+                } catch(err) { showToast("無効なファイルです"); }
                 event.target.value = "";
             };
             reader.readAsText(file);
         }
 
-        // テキストからのインポートモーダル表示（旧版用）
         function importData() {
             document.getElementById('backupText').value = "";
             document.getElementById('backupModal').style.display = 'flex';
         }
 
-        // テキストから復元実行
         function execImport() {
             try {
                 const val = document.getElementById('backupText').value;
                 const parsed = JSON.parse(val);
                 if(parsed.startDate) {
                     state = parsed;
-                    if(state.debugOffsetDays !== undefined) delete state.debugOffsetDays;
                     save();
                     closeBackupModal();
                     showToast("テキストから復元しました");
-                } else {
-                    showToast("データ形式が正しくありません");
+                } else { showToast("データ形式が正しくありません"); }
+            } catch(e) { showToast("無効なテキストデータです"); }
+        }
+
+        function closeBackupModal() { document.getElementById('backupModal').style.display = 'none'; }
+
+        // --------------------------------------------------
+        // 新機能：スワイプ（フリック）でのタブ移動
+        // --------------------------------------------------
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+        const mainTabs = ['home', 'guide', 'settings'];
+
+        function handleSwipeGesture() {
+            const xDiff = touchEndX - touchStartX;
+            const yDiff = touchEndY - touchStartY;
+
+            // 横方向の移動が縦方向より大きく、かつ50px以上フリックした場合のみ判定
+            if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 50) {
+                
+                // 現在開いているタブのインデックスを取得
+                let currentIndex = -1;
+                for (let i = 0; i < mainTabs.length; i++) {
+                    if (document.getElementById('screen-' + mainTabs[i]).classList.contains('active')) {
+                        currentIndex = i;
+                        break;
+                    }
                 }
-            } catch(e) {
-                showToast("無効なテキストデータです");
+
+                if (currentIndex === -1) return; // ログ画面などを開いている時はフリック無効
+
+                if (xDiff > 0) {
+                    // 右にフリック -> 左のタブへ移動
+                    if (currentIndex > 0) switchTab(mainTabs[currentIndex - 1]);
+                } else {
+                    // 左にフリック -> 右のタブへ移動
+                    if (currentIndex < mainTabs.length - 1) switchTab(mainTabs[currentIndex + 1]);
+                }
             }
         }
 
-        function closeBackupModal() {
-            document.getElementById('backupModal').style.display = 'none';
-        }
+        document.addEventListener('touchstart', e => {
+            // マルチタッチ時は無視
+            if (e.touches.length > 1) return;
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        }, { passive: true });
 
+        document.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            
+            // 画面の端（20px以内）からのスワイプは無視（ブラウザの「戻る・進む」との競合防止）
+            if (touchStartX < 20 || touchStartX > window.innerWidth - 20) return;
+            
+            handleSwipeGesture();
+        }, { passive: true });
+
+        // 初回描画
         render();
     </script>
 </body>
