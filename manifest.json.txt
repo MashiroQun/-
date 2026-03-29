@@ -1,0 +1,15 @@
+{
+  "name": "減薬マネージャー",
+  "short_name": "減薬マネージャー",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#F2F2F7",
+  "theme_color": "#F2F2F7",
+  "icons": [
+    {
+      "src": "https://mashiroqun.github.io/-/icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
