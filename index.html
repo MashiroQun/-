@@ -10,6 +10,17 @@
     <link rel="apple-touch-icon" sizes="180x180" href="https://mashiroqun.github.io/-/icon.png">
     <link rel="icon" href="icon.png?v=2">
 
+    <link rel="manifest" href="manifest.json">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Offline ready.'))
+        .catch(err => console.log('SW registration failed.'));
+    });
+  }
+</script>
+
     <style>
         /* 既存のCSSをそのまま保持しています */
         :root {
