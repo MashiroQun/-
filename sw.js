@@ -1,17 +1,24 @@
-const CACHE_NAME = 'gennyaku-manager-v4'; 
+const CACHE_NAME = 'gennyaku-manager-v5';
 
-const urlsToCache = [
+const ASSETS = [
   './',
   './index.html',
   './manifest.json',
   'https://mashiroqun.github.io/-/icon.png',
-  './icon.png?v=2'
-].map(url => new URL(url, location.href).href);
+  './icon.png'
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(urlsToCache);
+      // ファイルを1つずつ個別にキャッシュし、1つのエラーで全体が止まるのを防ぐ
+      return Promise.all(
+        ASSETS.map((url) => {
+          return cache.add(url).catch((err) => {
+            console.error('キャッシュの取得に失敗しました:', url, err);
+          });
+        })
+      );
     })
   );
 });
@@ -34,13 +41,15 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request, { ignoreSearch: true }).then((response) => {
-      if (response) return response;
-      
-      if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
-        return caches.match(new URL('./index.html', location.href).href) || caches.match(new URL('./', location.href).href);
+      if (response) {
+        return response;
       }
-
-      return fetch(event.request);
+      return fetch(event.request).catch(() => {
+        // オフライン時のHTML要求に対しては強制的にキャッシュのindex.htmlを返す
+        if (event.request.mode === 'navigate' || (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'))) {
+          return caches.match('./index.html', { ignoreSearch: true });
+        }
+      });
     })
   );
 });
