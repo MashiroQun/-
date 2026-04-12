@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gennyaku-manager-v2'; 
+const CACHE_NAME = 'gennyaku-manager-v3'; 
 
 const ASSETS = [
   './',
@@ -33,8 +33,17 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      return cachedResponse || fetch(event.request);
+    // ignoreSearch: true で「?v=2」などの違いを無視して確実にキャッシュをヒットさせます
+    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request).catch(() => {
+        // 万が一オフライン時にURLがズレてエラーになりかけた場合、強制的にアプリの画面(index.html)を返します
+        if (event.request.mode === 'navigate' || event.request.headers.get('accept').includes('text/html')) {
+          return caches.match('./index.html');
+        }
+      });
     })
   );
 });
