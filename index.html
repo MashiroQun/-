@@ -12,12 +12,57 @@
 
     <link rel="manifest" href="manifest.json">
 <script>
+  // A. ストレージ永続化の要求（iOSによるキャッシュの自動削除対策）
+  async function requestPersistentStorage() {
+    if (navigator.storage && navigator.storage.persist) {
+      const isPersisted = await navigator.storage.persist();
+      console.log(`ストレージ永続化: ${isPersisted ? '許可' : '未許可'}`);
+    }
+  }
+  requestPersistentStorage();
+
+  // B. Service Workerの手動更新ロジック
+  let newWorker;
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Offline ready.'))
-        .catch(err => console.log('SW registration failed.'));
+      navigator.serviceWorker.register('./sw.js').then(reg => {
+        console.log('Offline ready.');
+        
+        // 更新が見つかった場合の処理
+        reg.addEventListener('updatefound', () => {
+          newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateUI();
+            }
+          });
+        });
+      }).catch(err => console.log('SW registration failed:', err));
+
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+          window.location.reload();
+          refreshing = true;
+        }
+      });
     });
+  }
+
+  function showUpdateUI() {
+    const updateBtn = document.getElementById('update-button');
+    if (updateBtn) {
+      updateBtn.style.display = 'flex';
+      if (typeof showToast === 'function') {
+        showToast("新しいバージョンが利用可能です");
+      }
+    }
+  }
+
+  function executeAppUpdate() {
+    if (newWorker) {
+      newWorker.postMessage({ type: 'SKIP_WAITING' });
+    }
   }
 </script>
 
@@ -62,7 +107,7 @@
         .header-date { font-size: 15px; font-weight: 600; color: var(--text-secondary); }
 
         .card { background: var(--card-bg); border-radius: 20px; padding: 20px; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
-        .card-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; }
+        .card-header { font-size: 13px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; }
 
         .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 0 10px; }
         .intake-info { display: flex; flex-direction: column; align-items: flex-start; flex: 1; }
@@ -130,9 +175,9 @@
         .step-val { width: 70px; text-align: center; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; }
         .date-input { border: none; background: #E5E5EA; padding: 8px 12px; border-radius: 8px; font-size: 16px; font-weight: 600; color: var(--color-blue); font-family: inherit; }
         
-        .log-btn { width: 100%; padding: 18px; background: #F0F8FF; color: var(--color-blue); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 12px; cursor: pointer; }
-        .reset-btn { width: 100%; padding: 18px; background: white; color: var(--color-red); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 30px; cursor: pointer; }
-        .backup-btn { width: 100%; padding: 16px; background: #F9F9F9; color: #333; font-weight: 700; border: 1px solid #ddd; border-radius: 16px; font-size: 14px; margin-top: 10px; cursor: pointer; }
+        .log-btn { width: 100%; padding: 18px; background: #F0F8FF; color: var(--color-blue); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .reset-btn { width: 100%; padding: 18px; background: white; color: var(--color-red); font-weight: 700; border: none; border-radius: 16px; font-size: 16px; margin-top: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .backup-btn { width: 100%; padding: 16px; background: #F9F9F9; color: #333; font-weight: 700; border: 1px solid #ddd; border-radius: 16px; font-size: 14px; margin-top: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .backup-btn-primary { background: #F0F8FF; color: var(--color-blue); border-color: rgba(0, 122, 255, 0.3); }
         .backup-btn-sub { background: transparent; border: 1px dashed #ccc; color: #888; font-size: 12px; padding: 12px; margin-top: 20px; }
 
@@ -282,21 +327,44 @@
             <div class="setting-row"><span>廃棄の増減幅</span><div class="stepper"><button class="step-btn" onclick="changeSet('baseStep', -0.1)">−</button><div class="step-val"><span id="disp_baseStep">0.2</span>ml</div><button class="step-btn" onclick="changeSet('baseStep', 0.1)">＋</button></div></div>
             <div class="setting-row"><span>変更の間隔</span><div class="stepper"><button class="step-btn" onclick="changeSet('baseInterval', -1)">−</button><div class="step-val"><span id="disp_baseInterval">3</span>日</div><button class="step-btn" onclick="changeSet('baseInterval', 1)">＋</button></div></div>
         </div>
-        <button class="log-btn" onclick="switchTab('log', null)">減薬記録ログを見る</button>
+        <button class="log-btn" onclick="switchTab('log', null)">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            減薬記録ログを見る
+        </button>
         
         <div class="card" style="margin-top:16px;">
-            <div class="card-header">⚠️ データ保護（重要）</div>
+            <div class="card-header" style="color: var(--color-red);">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                データ保護（重要）
+            </div>
             <div style="font-size:13px; color:#666; margin-bottom:12px; line-height:1.6;">データの消失を防ぐため、定期的にバックアップを取ることを推奨します。</div>
             
-            <button class="backup-btn" onclick="exportData()">📤 バックアップを保存（ファイル）</button>
+            <button class="backup-btn" onclick="exportData()">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                バックアップを保存（ファイル）
+            </button>
             
             <input type="file" id="fileInput" accept=".json" style="display:none;" onchange="importFromFile(event)">
-            <button class="backup-btn backup-btn-primary" onclick="document.getElementById('fileInput').click()">📥 ファイルからデータを復元</button>
+            <button class="backup-btn backup-btn-primary" onclick="document.getElementById('fileInput').click()">
+                <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                ファイルからデータを復元
+            </button>
             
-            <button class="backup-btn backup-btn-sub" onclick="importData()">📋 旧バージョンのテキストから復元</button>
+            <button class="backup-btn backup-btn-sub" onclick="importData()">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+                旧バージョンのテキストから復元
+            </button>
         </div>
 
-        <button class="reset-btn" onclick="fullReset()">データを消去してリセット</button>
+        <button id="update-button" class="log-btn" style="display: none; margin-top: 16px; background-color: var(--color-orange); color: white;" onclick="executeAppUpdate()">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            新しいバージョンに更新する
+        </button>
+
+        <button class="reset-btn" onclick="fullReset()">
+            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            データを消去してリセット
+        </button>
         <div style="text-align:center; margin-top:20px; color:#CCC; font-size:11px;">減薬マネージャー v16.2</div>
     </div>
 
@@ -458,7 +526,6 @@
             document.getElementById('disp_baseInterval').innerText = state.baseInterval;
 
             renderPhaseList(phase.id);
-            // ※改善案3：ここではrenderLog()を呼ばないことで通常動作を爆速化
         }
 
         function getStatus() {
@@ -469,7 +536,6 @@
             return { title: "安定期間", desc: `${currentDays}日目`, sub: `/ ${standard}日`, ready: false, day: totalDays };
         }
 
-        // ※改善案1：ループ処理を数式に変更して計算を高速化
         function calculatePrediction() {
             if (state.baseStep <= 0) return { days: "---", date: "--/--" };
             const remaining = state.totalWater - state.discard;
@@ -528,7 +594,6 @@
             save();
         }
 
-        // ※改善案2：DOMの都度追加をやめて、文字列で一括流し込み（爆速化）
         function renderLog() {
             const tbody = document.getElementById('logTableBody');
             if(!state.history.length) {
@@ -581,7 +646,6 @@
                 const tabEl = el || document.getElementById('tab-'+id);
                 if(tabEl) tabEl.classList.add('active');
             } else {
-                // ※改善案3：ログ画面が開かれた時だけ描画を実行
                 renderLog();
             }
             
@@ -642,7 +706,7 @@
         function closeBackupModal() { document.getElementById('backupModal').style.display = 'none'; }
 
         // --------------------------------------------------
-        // 新機能：スワイプ（フリック）でのタブ移動
+        // スワイプ（フリック）でのタブ移動
         // --------------------------------------------------
         let touchStartX = 0;
         let touchStartY = 0;
@@ -654,10 +718,7 @@
             const xDiff = touchEndX - touchStartX;
             const yDiff = touchEndY - touchStartY;
 
-            // 横方向の移動が縦方向より大きく、かつ50px以上フリックした場合のみ判定
             if (Math.abs(xDiff) > Math.abs(yDiff) && Math.abs(xDiff) > 50) {
-                
-                // 現在開いているタブのインデックスを取得
                 let currentIndex = -1;
                 for (let i = 0; i < mainTabs.length; i++) {
                     if (document.getElementById('screen-' + mainTabs[i]).classList.contains('active')) {
@@ -666,20 +727,17 @@
                     }
                 }
 
-                if (currentIndex === -1) return; // ログ画面などを開いている時はフリック無効
+                if (currentIndex === -1) return;
 
                 if (xDiff > 0) {
-                    // 右にフリック -> 左のタブへ移動
                     if (currentIndex > 0) switchTab(mainTabs[currentIndex - 1]);
                 } else {
-                    // 左にフリック -> 右のタブへ移動
                     if (currentIndex < mainTabs.length - 1) switchTab(mainTabs[currentIndex + 1]);
                 }
             }
         }
 
         document.addEventListener('touchstart', e => {
-            // マルチタッチ時は無視
             if (e.touches.length > 1) return;
             touchStartX = e.changedTouches[0].screenX;
             touchStartY = e.changedTouches[0].screenY;
@@ -689,7 +747,6 @@
             touchEndX = e.changedTouches[0].screenX;
             touchEndY = e.changedTouches[0].screenY;
             
-            // 画面の端（20px以内）からのスワイプは無視（ブラウザの「戻る・進む」との競合防止）
             if (touchStartX < 20 || touchStartX > window.innerWidth - 20) return;
             
             handleSwipeGesture();
